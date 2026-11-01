@@ -1,6 +1,6 @@
 {
   "name": "companion-module-apple-tv",
-  "version": "0.5.1-dev.4",
+  "version": "1.0.0",
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
@@ -22,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cbusillo/companion-module-apple-tv.git"
+    "url": "git+https://github.com/bitfocus/companion-module-apple-tv.git"
   },
   "engines": {
     "node": "^22.22.1",

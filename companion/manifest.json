@@ -7,8 +7,8 @@
 	"description": "Apple TV control and metadata with built-in PIN pairing",
 	"version": "0.0.0",
 	"license": "MIT",
-	"repository": "git+https://github.com/cbusillo/companion-module-apple-tv.git",
-	"bugs": "https://github.com/cbusillo/companion-module-apple-tv/issues",
+	"repository": "git+https://github.com/bitfocus/companion-module-apple-tv.git",
+	"bugs": "https://github.com/bitfocus/companion-module-apple-tv/issues",
 	"maintainers": [
 		{
 			"name": "Chris Busillo"
