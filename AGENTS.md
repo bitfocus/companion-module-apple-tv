@@ -27,6 +27,8 @@ Evidence: [README.md](README.md); the Hardware Safety rules below apply to all r
   result. Pairing happens only after an explicit request.
 - Never commit pairing keys, credentials, device identifiers, addresses, or raw
   captures. Use invented values.
+- A fork's package identity must be unique before it is installed on the
+  device. Static review of a fork is a separate step from executing its code.
 
 ## Engineering Defaults
 
