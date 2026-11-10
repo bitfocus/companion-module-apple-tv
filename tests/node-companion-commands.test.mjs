@@ -20,7 +20,7 @@ function fixture(reply = new Map()) {
 }
 
 test('app discovery decodes an independently generated compressed device reply', async () => {
-	// Generated with the locked pyatv codec, not with the Node encoder being tested.
+	// Generated with the pyatv codec, not with the Node encoder being tested.
 	const packet = Buffer.from(
 		'e2425f740b425f63e24f636f6d2e6578616d706c652e6f6e654b4578616d706c65204170704f636f6d2e6578616d706c652e74776fa3',
 		'hex',

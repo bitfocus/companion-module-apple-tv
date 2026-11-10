@@ -438,7 +438,7 @@ export class CompanionCommands {
 		if (failed) throw failure
 	}
 
-	/** Register before tvremoteservices starts, as pyatv does; retain one clock per connection. */
+	/** Register before tvremoteservices starts; retain one clock per connection. */
 	async startTouch(): Promise<void> {
 		if (this.touchStart === undefined) {
 			const origin = this.now()
@@ -475,7 +475,7 @@ export class CompanionCommands {
 			let x = x0
 			let y = y0
 			let current = this.now()
-			// Match pyatv's accepted brisk gesture, including its immediate first Hold
+			// A brisk gesture the TV accepts, including its immediate first Hold
 			// and remaining-time interpolation. A wait-first linear swipe is different.
 			while (current < end) {
 				const remaining = Number(end - current)

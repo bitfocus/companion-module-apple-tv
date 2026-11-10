@@ -1,5 +1,5 @@
 {
-	"source": "Locked pyatv protobuf and AirPlay DataStream encoders; all data synthetic",
+	"source": "pyatv 0.18.0 protobuf and AirPlay DataStream encoders; all data synthetic",
 	"messages": {
 		"device": "080fa2015f0a0574762d6964120c53796e7468657469632054569a010974762d6f7574707574c00100e20124121153796e74686574696320737065616b65729a010e737065616b65722d6f7574707574e801019a020e636c75737465722d6f7574707574",
 		"availability": "0811b2010408011003",

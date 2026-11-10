@@ -51,7 +51,7 @@ test('touch surface is registered before the remote session and retained across 
 		if (identifier === '_hidT') touches.push(envelope.get('_c'))
 	}
 	await run(connection, async (commands) => {
-		// pyatv connects touch before tvremoteservices, not at the first gesture.
+		// Touch connects before tvremoteservices, not at the first gesture.
 		assert.deepEqual(
 			connection.requests.slice(0, 4).map((r) => r.identifier),
 			['_systemInfo', '_touchStart', '_sessionStart', 'TVRCSessionStart'],

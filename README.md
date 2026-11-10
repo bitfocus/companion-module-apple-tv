@@ -144,7 +144,7 @@ it with filesystem access restricted to the package.
 CI builds and packages the module on Linux, macOS and Windows. Synthetic tests
 cover setup, secret persistence, restart, cancellation, encryption,
 metadata, queue expiry and reconnect without replay. Metadata decoding is also
-checked against packets recorded from pyatv 0.18.0. Hardware testing so far covers
+checked against packets recorded from an independent implementation. Hardware testing so far covers
 one Apple TV; this does not establish compatibility with every tvOS version, app,
 audio route or operating-system installation.
 
