@@ -1,9 +1,8 @@
 # Apple TV Companion module
 
 Control Apple TV from Bitfocus Companion, with discovery, PIN pairing, remote
-buttons, app launching and Now Playing variables. Version 0.5 runs entirely in
-Companion's Node runtime. Users do not install Python, run a terminal command or
-prepare a credential file.
+buttons, app launching and Now Playing variables. It runs entirely in Companion's
+Node runtime, with no terminal command or credential file to prepare.
 
 ## Requirements
 
@@ -31,16 +30,6 @@ new attempt. Previous saved keys are retained until a replacement verifies.
 Disabling the connection cancels a pending attempt. Failed pairing can leave a
 controller registration on the TV; remove only the abandoned registration from
 tvOS when retiring it.
-
-## Upgrading from the Python version
-
-Keep a Companion backup and the previous package before upgrading. Existing
-connections start disabled after migration and require one new PIN pairing.
-Enable, discover, select and pair using the steps above. Existing Remote command
-and Launch App action IDs and variable names are preserved, so buttons keep their
-mappings. Old Python and credential-file paths remain in the saved config for
-rollback; the Node runtime does not read them. Keep that environment and file
-until the new installation has been accepted.
 
 ## Controls and feedback
 
@@ -83,8 +72,7 @@ Elapsed time advances from the selected player's reported position, timestamp
 and playback rate; it freezes on pause and clears on connection loss. Streams
 without a duration have no invented remaining time. Metadata availability depends
 on the playing app. `last_result` describes dispatch, rejection or uncertain
-delivery, never physical confirmation. Its wording changed from the Python
-version; update custom comparisons if used.
+delivery, never physical confirmation.
 
 ## Personal audio output
 
@@ -155,52 +143,30 @@ used because it did not reliably select AirPods.
 
 ## Development and qualification
 
-Use Node 22 and Yarn 4. Python is used only for the independent protocol oracle
-and retained reference-worker tests, not by the packaged module.
+Use Node 22 and Yarn 4. `yarn build`, `yarn lint` and `yarn test` are the usual
+checks. `yarn package` builds the Companion package and `yarn test:package` loads
+it with filesystem access restricted to the package.
 
-Root inspection lanes route TypeScript, JavaScript and JSON to native WebStorm
-and Python/YAML to native PyCharm. Inspect each product separately. WebStorm
-prepares the committed Yarn lockfile in its private snapshot; PyCharm keeps the
-structured Python preparation. ESLint is covered by `yarn lint`. The shared
-`Companion Apple TV` JetBrains inspection profile is selected by both lanes.
-It leaves arrow-parameter parentheses to Prettier and disables unused-global-symbol
-findings only under `tests/`, where duck-typed fakes expose
-members indirectly. Other IDE state remains local and ignored.
+CI builds and packages the module on Linux, macOS and Windows. Synthetic tests
+cover setup, secret persistence, restart, cancellation, migration, encryption,
+metadata, queue expiry and reconnect without replay. Metadata decoding is also
+checked against packets recorded from pyatv 0.18.0. Hardware testing so far covers
+one Apple TV; this does not establish compatibility with every tvOS version, app,
+audio route or operating-system installation.
 
-The minimum Companion version and the module API range it accepts are recorded
-under `companion` in `package.json`. `yarn package` fails when the bundled
-`@companion-module/base` version falls outside that range. Raise both values and
-the Requirements section together when moving to a newer base line.
+Developer tools for a real Apple TV live in `tools/` and are not part of the
+package. `yarn build:tools` compiles them to `dist-tools/`, for example
+`node dist-tools/tools/live.js scan`.
 
-Local checks select affected test files with `qualityGate.test.local` in
-[workflow metadata](.github/github.json), after the build/type check.
-[AGENTS.md](AGENTS.md#github-workflow) describes focused Python reference-worker
-selection and covering-module tracing.
-
-`qualityGate.test.ci` composes the existing canonical build, lint, Node/Python,
-independent protocol/metadata and package commands in that metadata. Install the
-locked Node and Python dependencies first using its setup commands. CI's
-`validation-gate` retains the separate macOS and Windows packaged-runtime checks.
-
-CI checks the bundle on Linux, macOS and Windows. Synthetic tests cover setup,
-secret persistence, restart, cancellation, migration, encryption, metadata,
-queue expiry and reconnect without replay. The package test loads the real bundle,
-with its compiled schemas, and filesystem access restricted to the package. The independent
-pyatv peer also exercises real bundled PIN pairing, closure while awaiting a PIN
-and rejection of an invalid identity signature. Hardware testing
-so far covers one Apple TV; this does not establish compatibility with every tvOS
-version, app, audio route or operating-system installation.
-
-The [library patch and qualification notes](experiments/node-library/README.md)
-describe the small patch to `node-appletv-remote` 0.5.0 and the separate developer
-harness. No upstream acceptance or distribution approval is implied by the
-candidate.
+Real Apple TV tests are opt-in and run only while someone is watching the TV.
+CI and unit tests use synthetic peers and fixtures. Never start a pairing
+automatically or retry one after an uncertain result. Never commit pairing keys,
+credentials, device identifiers, addresses or raw captures; use invented values.
 
 ## Provenance
 
-The project started with Bitfocus's TypeScript template and a Python adapter
-reused from the MIT-licensed Media Control Relay project. Historical Python source
-and `LICENSE-MCR` remain for reference and rollback work. The Node runtime uses
-the patched MIT-licensed `node-appletv-remote` library; package generation includes
-the bundled dependency license inventory. pyatv 0.18.0, locked in `uv.lock`, remains
-the independent protocol reference.
+The project started with Bitfocus's TypeScript template. The module uses the
+MIT-licensed `node-appletv-remote` library with a small patch in
+`experiments/node-library/patches`; package generation includes the bundled
+dependency license inventory. pyatv 0.18.0 was the independent protocol reference
+during development.

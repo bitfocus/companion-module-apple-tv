@@ -1,6 +1,6 @@
 /** Prepared physical test. Call only after the owner is watching the TV. */
 import { setTimeout as delay } from 'node:timers/promises'
-import type { NodeController, RemoteAction } from './controller.js'
+import type { NodeController, RemoteAction } from '../src/prototype/controller.js'
 
 type Controller = Pick<
 	NodeController,

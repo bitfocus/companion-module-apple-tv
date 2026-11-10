@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
-import { runAcceptance } from '../dist/prototype/acceptance.js'
+import { runAcceptance } from '../dist-tools/tools/acceptance.js'
 
 function fixture(initialPower = 'On') {
 	const actions = []
@@ -218,7 +218,7 @@ test('CLI validates Sleep wait without credential access or a connection', () =>
 		const result = spawnSync(
 			process.execPath,
 			[
-				'dist/prototype/acceptance-live.js',
+				'dist-tools/tools/acceptance-live.js',
 				'--mode',
 				mode,
 				'--sleep-seconds',
@@ -332,7 +332,7 @@ for (const mode of ['power', 'wake', 'volume'])
 		const result = spawnSync(
 			process.execPath,
 			[
-				'dist/prototype/acceptance-live.js',
+				'dist-tools/tools/acceptance-live.js',
 				'--mode',
 				mode,
 				'--app',
@@ -422,7 +422,7 @@ test('default CLI preview does not read credentials or connect to a device', () 
 	const result = spawnSync(
 		process.execPath,
 		[
-			'dist/prototype/acceptance-live.js',
+			'dist-tools/tools/acceptance-live.js',
 			'--app',
 			'Player',
 			'--credentials',
@@ -437,7 +437,7 @@ test('default CLI preview does not read credentials or connect to a device', () 
 })
 
 test('explicit run without required file paths fails before opening a device connection', () => {
-	const result = spawnSync(process.execPath, ['dist/prototype/acceptance-live.js', '--run'], {
+	const result = spawnSync(process.execPath, ['dist-tools/tools/acceptance-live.js', '--run'], {
 		encoding: 'utf8',
 		timeout: 2000,
 	})
@@ -492,7 +492,7 @@ test('audio pilot does not retry a failed step or send cleanup volume', async ()
 test('audio CLI preview remains offline and describes its complete bounded sequence', () => {
 	const result = spawnSync(
 		process.execPath,
-		['dist/prototype/acceptance-live.js', '--mode', 'audio', '--credentials', '/unreadable/test.json'],
+		['dist-tools/tools/acceptance-live.js', '--mode', 'audio', '--credentials', '/unreadable/test.json'],
 		{ encoding: 'utf8', timeout: 5000 },
 	)
 	assert.equal(result.status, 0, result.stderr)
@@ -505,7 +505,7 @@ test('output-change CLI previews offline without reading credentials or creating
 	const result = spawnSync(
 		process.execPath,
 		[
-			'dist/prototype/acceptance-live.js',
+			'dist-tools/tools/acceptance-live.js',
 			'--mode',
 			'audio-output',
 			'--app',

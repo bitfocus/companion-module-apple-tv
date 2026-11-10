@@ -2,8 +2,8 @@
 import { parseArgs } from 'node:util'
 import { setTimeout as delay } from 'node:timers/promises'
 import { loadTestCredentials } from './credentials.js'
-import { NodeController, type RemoteAction } from './controller.js'
-import type { Button, Direction, MediaCommand } from './companion.js'
+import { NodeController, type RemoteAction } from '../src/prototype/controller.js'
+import type { Button, Direction, MediaCommand } from '../src/prototype/companion.js'
 
 async function main(): Promise<void> {
 	const { values } = parseArgs({
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
 	})
 	if (values.help) {
 		process.stdout.write(`Separate Node control pilot (requires existing test pairing):
-  node dist/prototype/controls-live.js --credentials /private/test.json [--seconds 5]
+  node dist-tools/tools/controls-live.js --credentials /private/test.json [--seconds 5]
   Add exactly one action: --button up|down|left|right|select|back|home|appSwitcher|homeHold|controlCenter|playPause|volumeUp|volumeDown|screensaver
     --media play|pause|next|previous | --swipe up|down|left|right | --seek SECONDS
     --volume PERCENT | --app BUNDLE_ID | --power | --mute

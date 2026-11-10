@@ -1,15 +1,15 @@
 /** Separate development CLI; never imported by the installed Companion module. */
 import { parseArgs } from 'node:util'
 import { CompanionPairSetup, scan, type DiscoveredDevice, type HAPCredentials } from 'node-appletv-remote'
-import { CompanionRequestRejected } from './companion.js'
+import { CompanionRequestRejected } from '../src/prototype/companion.js'
 import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from './credentials.js'
-import { bounded, withCompanionSession } from './session.js'
+import { bounded, withCompanionSession } from '../src/prototype/session.js'
 
 const HELP = `Separate Node Companion test (Node 22):
-  node dist/prototype/live.js scan
-  node dist/prototype/live.js pair --device DEVICE_ID --credentials /private/directory/test.json
-  node dist/prototype/live.js check --credentials /private/directory/test.json
-  node dist/prototype/live.js launch --credentials /private/directory/test.json --app BUNDLE_ID
+  node dist-tools/tools/live.js scan
+  node dist-tools/tools/live.js pair --device DEVICE_ID --credentials /private/directory/test.json
+  node dist-tools/tools/live.js check --credentials /private/directory/test.json
+  node dist-tools/tools/live.js launch --credentials /private/directory/test.json --app BUNDLE_ID
 
 Pair displays a PIN on the selected TV, reads it without echo, saves new credentials
 with mode 0600, then checks a new session and app discovery. Check is read-only.

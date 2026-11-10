@@ -2,7 +2,7 @@
 import { open } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
 import { observeMetadata } from './metadata-pilot.js'
-import type { MetadataSnapshot } from './metadata.js'
+import type { MetadataSnapshot } from '../src/prototype/metadata.js'
 
 async function main(): Promise<void> {
 	const { values } = parseArgs({
@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 	if (values.help || !values.run) {
 		process.stdout.write(`${JSON.stringify(plan)}\n`)
 		process.stdout.write(
-			'Run: node dist/prototype/metadata-live.js --run --credentials /private/test.json --report /private/new-report.json\n',
+			'Run: node dist-tools/tools/metadata-live.js --run --credentials /private/test.json --report /private/new-report.json\n',
 		)
 		return
 	}

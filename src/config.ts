@@ -51,7 +51,7 @@ export function GetConfigFields(devices: DeviceChoice[] = [], selected = ''): So
 			id: 'setupHelp',
 			label: 'Setup',
 			value:
-				'Apple TV and Companion must be reachable on the same local network. Pair once here; no Python or terminal setup is needed. Upgrading from the Python module requires a new PIN pairing. Existing buttons keep their command mappings.',
+				'Apple TV and Companion must be reachable on the same local network. Pair once here; no terminal setup is needed.',
 			width: 12,
 		},
 	]

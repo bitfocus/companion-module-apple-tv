@@ -2,7 +2,7 @@
 
 Requires Companion 5.1.0 or later.
 
-No Python or terminal setup is required. Keep Apple TV and Companion reachable
+No terminal setup is required. Keep Apple TV and Companion reachable
 on the same local network.
 
 1. Enable the connection and Save. Select your Apple TV from the list. Use
@@ -15,10 +15,7 @@ on the same local network.
 Pairing never starts automatically. The module waits up to three minutes, but
 the TV can close the session earlier; Companion reports when that happens.
 If pairing fails or expires, explicitly start a
-new attempt. Disabling the connection cancels a pending attempt. Upgrading from
-the Python module requires new PIN pairing; existing button mappings remain.
-Keep a backup and the previous package, Python environment and credential file
-until you have accepted the replacement.
+new attempt. Disabling the connection cancels a pending attempt.
 
 Remote command offers navigation, playback, volume, seeks, swipes, App Switcher,
 Control Center, Screensaver and power. Launch App lists the TV's applications.

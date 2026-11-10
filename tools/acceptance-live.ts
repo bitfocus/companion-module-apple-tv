@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
 import { PilotStopped, previewAcceptance, runAcceptance, type AcceptanceMode } from './acceptance.js'
 import { loadTestCredentials } from './credentials.js'
-import { NodeController } from './controller.js'
+import { NodeController } from '../src/prototype/controller.js'
 
 async function main(): Promise<void> {
 	const { values } = parseArgs({
@@ -19,14 +19,14 @@ async function main(): Promise<void> {
 	})
 	if (values.help) {
 		process.stdout.write(`Prepared physical test (Node 22):
-  node dist/prototype/acceptance-live.js --app YouTube
-  node dist/prototype/acceptance-live.js --app YouTube --run --credentials /private/test.json --report /private/result.json
-  node dist/prototype/acceptance-live.js --mode power --run --credentials /private/test.json --report /private/power.json
-  node dist/prototype/acceptance-live.js --mode power --sleep-seconds 20
-  node dist/prototype/acceptance-live.js --mode wake --run --credentials /private/test.json --report /private/wake.json
-  node dist/prototype/acceptance-live.js --mode volume --run --credentials /private/test.json --report /private/volume.json
-  node dist/prototype/acceptance-live.js --mode audio --run --credentials /private/test.json --report /private/audio.json
-  node dist/prototype/acceptance-live.js --mode audio-output --run --credentials /private/test.json --report /private/audio-output.json
+  node dist-tools/tools/acceptance-live.js --app YouTube
+  node dist-tools/tools/acceptance-live.js --app YouTube --run --credentials /private/test.json --report /private/result.json
+  node dist-tools/tools/acceptance-live.js --mode power --run --credentials /private/test.json --report /private/power.json
+  node dist-tools/tools/acceptance-live.js --mode power --sleep-seconds 20
+  node dist-tools/tools/acceptance-live.js --mode wake --run --credentials /private/test.json --report /private/wake.json
+  node dist-tools/tools/acceptance-live.js --mode volume --run --credentials /private/test.json --report /private/volume.json
+  node dist-tools/tools/acceptance-live.js --mode audio --run --credentials /private/test.json --report /private/audio.json
+  node dist-tools/tools/acceptance-live.js --mode audio-output --run --credentials /private/test.json --report /private/audio-output.json
 
 Without --run: offline preview only; no credential access or network connection.
 Run only after the owner is watching. Wake mode requires an asleep TV; other modes require it awake.

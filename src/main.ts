@@ -181,7 +181,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 						type: 'dropdown',
 						label: 'Command',
 						default: 'select',
-						choices: Object.keys(remoteActions).map((id) => ({ id, label: id })),
+						choices: Object.entries(remoteActions).map(([id, { label }]) => ({ id, label })),
 					},
 				],
 				callback: async (event) =>

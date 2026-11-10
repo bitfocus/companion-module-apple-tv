@@ -6,7 +6,7 @@ import { OutputRouteRejected } from '../dist/prototype/metadata-session.js'
 import { NodeBackend } from '../dist/node-backend.js'
 import { saved } from './fixtures/node-setup-peer.mjs'
 import { fixture, until } from './fixtures/controller-peer.mjs'
-import { runAcceptance } from '../dist/prototype/acceptance.js'
+import { runAcceptance } from '../dist-tools/tools/acceptance.js'
 import { remoteActions } from '../dist/actions.js'
 import { SeekCancelled } from '../dist/prototype/controller.js'
 

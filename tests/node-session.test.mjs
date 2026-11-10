@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import test from 'node:test'
 import { bounded, withCompanionSession } from '../dist/prototype/session.js'
-import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from '../dist/prototype/credentials.js'
+import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from '../dist-tools/tools/credentials.js'
 
 const credentials = {
 	clientId: 'synthetic-controller',

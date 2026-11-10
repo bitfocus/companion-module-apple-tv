@@ -92,6 +92,10 @@ test('Companion entrypoint restores saved pairing and routes existing button IDs
 			{ kind: 'launch', bundleId: 'synthetic.app' },
 		])
 		const before = f.controllers[0].actions.length
+		assert.deepEqual(
+			actions.command.options[0].choices,
+			Object.entries(remoteActions).map(([id, { label }]) => ({ id, label })),
+		)
 		await actions.command.callback({ options: { command: '__proto__' } })
 		assert.equal(f.controllers[0].actions.length, before)
 		assert.equal(f.values.last_result, 'unknown command; not sent')

@@ -1,6 +1,3 @@
 package.json
 /LICENSE.md
-.venv/
-bridge/
-uv.lock
 yarn.lock

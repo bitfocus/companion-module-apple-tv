@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { MRPMessage } from 'node-appletv-remote'
 import { MetadataState } from '../dist/prototype/metadata.js'
-import { observeMetadata } from '../dist/prototype/metadata-pilot.js'
+import { observeMetadata } from '../dist-tools/tools/metadata-pilot.js'
 
 const playerPath = (client = 'test.player', player = 'main') => ({
 	client: { bundleIdentifier: client },
@@ -331,7 +331,13 @@ test('failure writing the final invalidated snapshot does not report success', a
 test('metadata CLI preview does not open the supplied credential/report paths', () => {
 	const result = spawnSync(
 		process.execPath,
-		['dist/prototype/metadata-live.js', '--credentials', '/unreadable/test.json', '--report', '/unwritable/test.json'],
+		[
+			'dist-tools/tools/metadata-live.js',
+			'--credentials',
+			'/unreadable/test.json',
+			'--report',
+			'/unwritable/test.json',
+		],
 		{ encoding: 'utf8', timeout: 5000 },
 	)
 	assert.equal(result.status, 0, result.stderr)

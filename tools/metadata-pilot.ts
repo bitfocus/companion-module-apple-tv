@@ -1,9 +1,9 @@
 import { setTimeout as delay } from 'node:timers/promises'
 import { scan, type DiscoveredDevice, type HAPCredentials } from 'node-appletv-remote'
 import { loadTestCredentials } from './credentials.js'
-import type { MetadataSnapshot } from './metadata.js'
-import { withMetadataSession, type MetadataConnection } from './metadata-session.js'
-import { bounded } from './session.js'
+import type { MetadataSnapshot } from '../src/prototype/metadata.js'
+import { withMetadataSession, type MetadataConnection } from '../src/prototype/metadata-session.js'
+import { bounded } from '../src/prototype/session.js'
 
 type Dependencies = {
 	load?: typeof loadTestCredentials
