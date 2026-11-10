@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import AppleTV, { UpgradeScripts } from '../dist/main.js'
+import AppleTV from '../dist/main.js'
 import { remoteActions } from '../dist/actions.js'
 import { config, saved, nextTurn, setupFixture } from './fixtures/node-setup-peer.mjs'
 
@@ -162,28 +162,6 @@ test('configuration and secret callbacks complete one pairing and preserve the p
 	} finally {
 		await f.module.destroy()
 	}
-})
-
-test('legacy upgrade preserves button options and old paths while requiring explicit new setup', async () => {
-	const old = { enabled: true, python: '/not-read/python', credentialFile: '/not-read/credentials.json' }
-	const action = { id: 'old-button', controlId: 'old-control', actionId: 'command', options: { command: 'select' } }
-	const result = UpgradeScripts[0]({}, { config: old, secrets: null, actions: [action], feedbacks: [] })
-	assert.equal(result.updatedConfig.enabled, false)
-	assert.equal(result.updatedConfig.python, old.python)
-	assert.equal(result.updatedConfig.credentialFile, old.credentialFile)
-	assert.deepEqual(action.options, { command: 'select' })
-	const f = fixture()
-	try {
-		await f.module.init(result.updatedConfig, false, {})
-		await nextTurn()
-		assert.equal(f.controllers.length, 0)
-		assert.equal(f.pairs.length, 0)
-		assert.equal(f.scans.length, 0)
-		assert.equal(f.values.connection, 'disabled')
-	} finally {
-		await f.module.destroy()
-	}
-	assert.equal(UpgradeScripts[0]({}, { config, secrets: saved(), actions: [], feedbacks: [] }).updatedConfig, null)
 })
 
 test('Save returns while discovery is pending and disable cancels it before late results can publish', async () => {

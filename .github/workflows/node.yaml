@@ -55,7 +55,7 @@ jobs:
         run: yarn install --immutable
       - name: Build Companion package
         run: yarn package
-      - name: Test setup, saved restart, cancellation, upgrade and playback time
+      - name: Test setup, saved restart, cancellation and playback time
         run: node --test tests/session.test.mjs tests/node-setup.test.mjs tests/playback.test.mjs
       - name: Test the bundled module with package-only filesystem permissions
         run: yarn test:package

@@ -4,9 +4,6 @@ import {
 	combineRgb,
 	type SomeCompanionConfigField,
 	type CompanionStaticUpgradeScript,
-	type CompanionUpgradeContext,
-	type CompanionStaticUpgradeProps,
-	type CompanionStaticUpgradeResult,
 } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
 import { displayDefaults, type DisplayValues } from './display.js'
@@ -34,19 +31,7 @@ export type ModuleSchema = {
 
 const routeTargets: Record<string, RouteTarget> = { toggle: 'toggle', personal: 'personal', default: 'default' }
 
-export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets>[] = [
-	(
-		_context: CompanionUpgradeContext<ModuleConfig>,
-		props: CompanionStaticUpgradeProps<ModuleConfig, ModuleSecrets>,
-	): CompanionStaticUpgradeResult<ModuleConfig, ModuleSecrets> => ({
-		updatedConfig:
-			props.config && !props.config.deviceId && (props.config.python || props.config.credentialFile)
-				? { ...props.config, deviceId: '', enabled: false, pair: false, refresh: false }
-				: null,
-		updatedActions: [],
-		updatedFeedbacks: [],
-	}),
-]
+export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets>[] = []
 
 const statuses: Record<SetupState, InstanceStatus> = {
 	disabled: InstanceStatus.Disconnected,

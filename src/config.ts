@@ -4,8 +4,6 @@ export type ModuleConfig = {
 	deviceId: string
 	pair?: boolean
 	refresh?: boolean
-	python?: string
-	credentialFile?: string
 	personalOutputName?: string
 	personalOutputId?: string
 }

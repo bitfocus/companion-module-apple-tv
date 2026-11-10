@@ -21,7 +21,7 @@
 		"entrypoint": "../dist/main.js",
 		"permissions": {}
 	},
-	"legacyIds": ["apple-tv-pyatv"],
+	"legacyIds": [],
 	"manufacturer": "Apple",
 	"products": ["Apple TV"],
 	"keywords": ["media", "remote control", "tvOS"]
