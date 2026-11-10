@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { CommandNotSent } from '../dist/prototype/queue.js'
-import { OutputRouteRejected } from '../dist/prototype/metadata-session.js'
+import { CommandNotSent } from '../dist/device/queue.js'
+import { OutputRouteRejected } from '../dist/device/metadata-session.js'
 import { NodeBackend } from '../dist/node-backend.js'
 import { saved } from './fixtures/node-setup-peer.mjs'
 import { fixture, until } from './fixtures/controller-peer.mjs'
 import { runAcceptance } from '../dist-tools/tools/acceptance.js'
 import { remoteActions } from '../dist/actions.js'
-import { SeekCancelled } from '../dist/prototype/controller.js'
+import { SeekCancelled } from '../dist/device/controller.js'
 
 test('controller accepts input only after a real health round trip and keeps gestures atomic', async () => {
 	const { controller, peers } = fixture()
@@ -605,7 +605,7 @@ test('backend toggles a learned personal output and keeps its identifier out of 
 		assert.equal(values.personal_output_route, 'Unavailable')
 		await backend.selectPersonalOutput('toggle')
 		assert.match(values.last_result, /not identified/)
-		// The owner selects the AirPods once on the TV; the module learns the reported UID.
+		// The user selects the AirPods once on the TV; the module learns the reported UID.
 		f.metadataPeers[0].names = names
 		f.metadataPeers[0].route([{ id: 'synthetic-airpods', name: names['synthetic-airpods'] }])
 		await until(() => values.personal_output_route === 'Personal')

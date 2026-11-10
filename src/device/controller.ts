@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises'
 import { scan, type HAPCredentials } from 'node-appletv-remote'
 import {
-	CompanionPrototype,
+	CompanionCommands,
 	CompanionRequestRejected,
 	UnsupportedCommand,
 	type Button,
@@ -38,14 +38,14 @@ type Options = {
 }
 /** Unanswered commands in a row before an otherwise open session is treated as dead. */
 const TIMEOUT_LIMIT = 3
-/** Largest skip one Companion seek request carries; see `CompanionPrototype.seek`. */
+/** Largest skip one Companion seek request carries; see `CompanionCommands.seek`. */
 const SEEK_LIMIT = 60
 
 /** Opposite seek ticks netted to zero while queued, so no request was sent. */
 export class SeekCancelled extends CommandNotSent {}
 
 /** A seek still waiting in the queue; later ticks add to it until it is sent. */
-type PendingSeek = { commands: CompanionPrototype; seconds: number; result?: Promise<void> }
+type PendingSeek = { commands: CompanionCommands; seconds: number; result?: Promise<void> }
 
 /** One line naming an error and the causes it wraps. */
 function describe(error: unknown): string {
@@ -58,7 +58,7 @@ function describe(error: unknown): string {
 /** Owns a Companion/metadata pair. Reconnect restores state, never past user input. */
 export class NodeController {
 	private phase: State = 'stopped'
-	private commands: CompanionPrototype | undefined
+	private commands: CompanionCommands | undefined
 	private queue = new CommandQueue()
 	private stopSignal = new AbortController()
 	private stopRequested = true
@@ -198,7 +198,7 @@ export class NodeController {
 	 * instead of one request per tick. Joined ticks share that request's outcome.
 	 */
 	private async seek(
-		commands: CompanionPrototype,
+		commands: CompanionCommands,
 		session: { reject(error: Error): void },
 		seconds: number,
 	): Promise<void> {
@@ -225,7 +225,7 @@ export class NodeController {
 		return result
 	}
 
-	private async query<T>(operation: (commands: CompanionPrototype) => Promise<T>): Promise<T> {
+	private async query<T>(operation: (commands: CompanionCommands) => Promise<T>): Promise<T> {
 		const commands = this.commands
 		const session = this.endSession
 		if (this.stopRequested || this.phase !== 'ready' || !commands?.active || !session)

@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, stat, chmod, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import test from 'node:test'
-import { bounded, withCompanionSession } from '../dist/prototype/session.js'
+import { bounded, withCompanionSession } from '../dist/device/session.js'
 import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from '../dist-tools/tools/credentials.js'
 
 const credentials = {

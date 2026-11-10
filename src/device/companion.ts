@@ -63,7 +63,7 @@ export async function companionRequest(
 }
 
 /** High-level commands composed through the library's public messaging API. */
-export class CompanionPrototype {
+export class CompanionCommands {
 	private power: Power = 'Unknown'
 	private powerAt = 0n
 	private powerRevision = 0

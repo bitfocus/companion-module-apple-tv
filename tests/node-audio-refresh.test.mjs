@@ -4,8 +4,8 @@ import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { MRPMessage } from 'node-appletv-remote'
 import { MetadataPeer } from './fixtures/metadata-peer.mjs'
-import { withMetadataSession } from '../dist/prototype/metadata-session.js'
-import { MetadataState } from '../dist/prototype/metadata.js'
+import { withMetadataSession } from '../dist/device/metadata-session.js'
+import { MetadataState } from '../dist/device/metadata.js'
 
 class ReadPeer extends MetadataPeer {
 	reads = []
@@ -81,7 +81,7 @@ test('output changes recover capability and correlated volume without device con
 	assert.equal(peer.listenerCount('mrp-message'), 0)
 })
 
-/** Like the owner's Apple TV on the wire: nothing about volume at connect, only after the session asks. */
+/** Like a real Apple TV on the wire: nothing about volume at connect, only after the session asks. */
 class QuietPeer extends MetadataPeer {
 	level = 40
 	async connect() {

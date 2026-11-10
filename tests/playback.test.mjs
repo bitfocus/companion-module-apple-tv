@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { PlaybackClock } from '../dist/playback.js'
-import { MetadataState } from '../dist/prototype/metadata.js'
+import { MetadataState } from '../dist/device/metadata.js'
 import { displayValues } from '../dist/display.js'
 const playing = {
 	state: 'Playing',

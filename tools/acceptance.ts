@@ -1,6 +1,6 @@
-/** Prepared physical test. Call only after the owner is watching the TV. */
+/** Prepared physical test. Call only after someone is watching the TV. */
 import { setTimeout as delay } from 'node:timers/promises'
-import type { NodeController, RemoteAction } from '../src/prototype/controller.js'
+import type { NodeController, RemoteAction } from '../src/device/controller.js'
 
 type Controller = Pick<
 	NodeController,
@@ -57,7 +57,7 @@ export function previewAcceptance(
 	return [
 		...(mode === 'audio-output'
 			? [
-					'Mute once, then observe the owner switching to another audio output and back within three minutes',
+					'Mute once, then observe someone switching to another audio output and back within three minutes',
 					'Record volume and output report order; require the saved mute level to be cleared on the changed output and on return',
 					'An early volume update keeps observation running; only a reported output departure and return count, followed by five seconds',
 					'Require a recovered authenticated volume reading on the returned output',

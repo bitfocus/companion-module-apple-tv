@@ -1,5 +1,5 @@
-import { OutputRouteRejected } from './prototype/metadata-session.js'
-import { CommandNotSent } from './prototype/queue.js'
+import { OutputRouteRejected } from './device/metadata-session.js'
+import { CommandNotSent } from './device/queue.js'
 
 export type PersonalRoute = 'Personal' | 'Default' | 'Connecting' | 'Failed' | 'Unavailable'
 export type RouteTarget = 'toggle' | 'personal' | 'default'

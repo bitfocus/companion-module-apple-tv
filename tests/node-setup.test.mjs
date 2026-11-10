@@ -3,9 +3,9 @@ import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
 import { NodeBackend } from '../dist/node-backend.js'
 import { decodePairing, encodePairing } from '../dist/node-credentials.js'
-import { CommandNotSent } from '../dist/prototype/queue.js'
-import { SeekCancelled } from '../dist/prototype/controller.js'
-import { UnsupportedCommand, CompanionRequestRejected } from '../dist/prototype/companion.js'
+import { CommandNotSent } from '../dist/device/queue.js'
+import { SeekCancelled } from '../dist/device/controller.js'
+import { UnsupportedCommand, CompanionRequestRejected } from '../dist/device/companion.js'
 import {
 	config,
 	credentials,

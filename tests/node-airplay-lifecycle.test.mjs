@@ -3,7 +3,7 @@ import { createServer } from 'node:net'
 import { once } from 'node:events'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { withMetadataSession } from '../dist/prototype/metadata-session.js'
+import { withMetadataSession } from '../dist/device/metadata-session.js'
 
 // The module's metadata session over the real library AirPlay transport, on loopback only.
 const credentials = {

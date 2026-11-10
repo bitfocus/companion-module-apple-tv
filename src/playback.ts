@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks'
-import type { MetadataSnapshot } from './prototype/metadata.js'
+import type { MetadataSnapshot } from './device/metadata.js'
 
 type Playing = MetadataSnapshot['nowPlaying']
 

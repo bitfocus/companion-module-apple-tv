@@ -1,8 +1,8 @@
 import { EventEmitter } from 'node:events'
 import { setTimeout as delay } from 'node:timers/promises'
-import { NodeController } from '../../dist/prototype/controller.js'
-import { withCompanionSession } from '../../dist/prototype/session.js'
-import { withMetadataSession } from '../../dist/prototype/metadata-session.js'
+import { NodeController } from '../../dist/device/controller.js'
+import { withCompanionSession } from '../../dist/device/session.js'
+import { withMetadataSession } from '../../dist/device/metadata-session.js'
 import { MetadataPeer } from './metadata-peer.mjs'
 
 /** Synthetic Companion and metadata peers for a real NodeController; no network access. */

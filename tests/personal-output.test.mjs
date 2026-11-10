@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { PersonalOutputRouter } from '../dist/personal-output.js'
-import { OutputRouteRejected } from '../dist/prototype/metadata-session.js'
-import { CommandNotSent } from '../dist/prototype/queue.js'
+import { OutputRouteRejected } from '../dist/device/metadata-session.js'
+import { CommandNotSent } from '../dist/device/queue.js'
 
 const settle = () => new Promise((resolve) => setImmediate(resolve))
 const tv = { id: 'tv-output', name: 'Living Room' }

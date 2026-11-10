@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { CompanionPrototype } from '../dist/prototype/companion.js'
-import { MetadataState } from '../dist/prototype/metadata.js'
+import { CompanionCommands } from '../dist/device/companion.js'
+import { MetadataState } from '../dist/device/metadata.js'
 import { MetadataPeer } from './fixtures/metadata-peer.mjs'
 
 async function fixture() {
@@ -12,7 +12,7 @@ async function fixture() {
 	const writes = []
 	/** @type {(percent: number) => void | Promise<void>} */
 	let onWrite = (percent) => peer.volume(percent)
-	const commands = new CompanionPrototype(
+	const commands = new CompanionCommands(
 		{
 			async sendCompanionRequest(id, envelope) {
 				const content = envelope.get('_c')

@@ -1,4 +1,4 @@
-import type { RemoteAction } from './prototype/controller.js'
+import type { RemoteAction } from './device/controller.js'
 
 export const remoteActions: Record<
 	string,

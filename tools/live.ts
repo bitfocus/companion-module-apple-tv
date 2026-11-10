@@ -1,9 +1,9 @@
 /** Separate development CLI; never imported by the installed Companion module. */
 import { parseArgs } from 'node:util'
 import { CompanionPairSetup, scan, type DiscoveredDevice, type HAPCredentials } from 'node-appletv-remote'
-import { CompanionRequestRejected } from '../src/prototype/companion.js'
+import { CompanionRequestRejected } from '../src/device/companion.js'
 import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from './credentials.js'
-import { bounded, withCompanionSession } from '../src/prototype/session.js'
+import { bounded, withCompanionSession } from '../src/device/session.js'
 
 const HELP = `Separate Node Companion test (Node 22):
   node dist-tools/tools/live.js scan

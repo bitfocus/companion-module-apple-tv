@@ -48,10 +48,9 @@ ever wakes it: it reads power first and sends Home only while the TV reports
 Off, so it never sleeps an awake TV or navigates Home on one. Read the `power`
 variable, or use the **Apple TV is on** feedback, to confirm the result. The
 feedback is true only while `power` reads On.
-Wake from an already-asleep TV and a cycle with twenty seconds asleep passed on
-the test device. An earlier five-second cycle failed; no minimum safe interval
-has been established. Avoid immediate sleep/wake automation until it is qualified
-on your device.
+Allow the TV to finish sleeping before waking it. A cycle with twenty seconds
+asleep worked in testing and a five-second cycle failed, so avoid immediate
+sleep/wake automation.
 
 Mute saves a nonzero reported volume and sets it to zero. A second press restores
 the saved value only while the audio output and feedback remain valid. A dial
@@ -96,10 +95,8 @@ context over the authenticated AirPlay session. Toggle chooses the direction
 from the live output list. Returning to default selects the other outputs the
 TV currently reports. If the route is still unconfirmed 3 seconds after the
 request settles, the same request is sent once more on the same session, and
-never again. On the test TV, a first request after the AirPods left their case
-connected them (the chime played) without routing audio to them, while a second
-request switched the route. The TV's acknowledgement is
-not treated as success; only the reported output list confirms the route. A slow
+never again, because a first request just after AirPods leave their case can
+connect them without routing audio to them. The TV's acknowledgement is not treated as success; only the reported output list confirms the route. A slow
 or missing acknowledgement, common while AirPods are taken over from another
 device, ends only that wait and never drops the connection.
 `Connecting` lasts until confirmation or 20 seconds. `Failed` follows a timeout
@@ -108,11 +105,9 @@ connection or a change made on the TV therefore still updates the variable.
 Reconnects cancel a pending request, including its repeat, without replaying it.
 
 Taking over AirPods connected to another Apple device on the same account can
-take more than 8 seconds; idle nearby AirPods confirmed in 0.2-0.5 seconds on
-the test TV. The older `SharedAudioPresentation` speaker-group request is not
-used because it did not reliably select AirPods.
+take more than 8 seconds; idle nearby AirPods usually confirm in under a second.
 
-## Failure and lifecycle contract
+## How failures are handled
 
 - One serialized action queue, at most eight operations, with input expiring
   after 500 ms waiting. Complete button and swipe gestures stay together.
@@ -121,8 +116,7 @@ used because it did not reliably select AirPods.
   request per tick. One request carries at most 60 seconds; a tick that would
   pass that starts the next queued seek. A tick in the other direction subtracts,
   and ticks that cancel out send nothing. Ticks never join a seek queued before
-  other input, and joined ticks share that request's result. The owner confirmed
-  fast YouTube scrubbing on the real Apple TV on October 12, 2026.
+  other input, and joined ticks share that request's result.
 - Failed or lost sessions discard queued actions and stale feedback. Controls
   are never automatically retried, including after uncertain delivery.
 - Remote and metadata connections reconnect together using saved pairing and
@@ -133,15 +127,15 @@ used because it did not reliably select AirPods.
   the Companion log with its reason. A lost Companion connection names how it
   ended: a socket error with its code, or a close by the TV, with any frame the
   library could not read just before it.
-- A frame the TV sends that the library cannot decode is dropped; it no longer
-  ends the session.
+- A frame the TV sends that the library cannot decode is dropped and does not
+  end the session.
 - Disabling or destroying the connection cancels discovery, pairing, requests,
   sockets and timers. Keys remain in Companion's secret store.
 - The package needs no child-process or general filesystem permission. It reads
   its own bundled protocol schemas. Companion's handling of secrets and backups
   still applies; do not publish backups containing pairing keys.
 
-## Development and qualification
+## Development
 
 Use Node 22 and Yarn 4. `yarn build`, `yarn lint` and `yarn test` are the usual
 checks. `yarn package` builds the Companion package and `yarn test:package` loads
@@ -167,6 +161,6 @@ credentials, device identifiers, addresses or raw captures; use invented values.
 
 The project started with Bitfocus's TypeScript template. The module uses the
 MIT-licensed `node-appletv-remote` library with a small patch in
-`experiments/node-library/patches`; package generation includes the bundled
+`patches/`; package generation includes the bundled
 dependency license inventory. pyatv 0.18.0 was the independent protocol reference
 during development.

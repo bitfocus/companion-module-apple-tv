@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto'
 import { CompanionConnection, type HAPCredentials } from 'node-appletv-remote'
-import { CompanionPrototype, CompanionRequestRejected, companionRequest } from './companion.js'
+import { CompanionCommands, CompanionRequestRejected, companionRequest } from './companion.js'
 
 export type Connection = Pick<CompanionConnection, 'connect' | 'sendRequest' | 'close' | 'on' | 'off'> &
 	Partial<Pick<CompanionConnection, 'sendMessage'>>
@@ -54,7 +54,7 @@ export async function withCompanionSession<T>(
 	target: Target,
 	credentials: HAPCredentials,
 	signal: AbortSignal,
-	operation: (commands: CompanionPrototype) => Promise<T>,
+	operation: (commands: CompanionCommands) => Promise<T>,
 	createConnection: (target: Target, credentials: HAPCredentials) => Connection = (device, keys) =>
 		new CompanionConnection(device.address, device.companionPort, keys),
 	onStage: (stage: string) => void = () => {},
@@ -115,8 +115,8 @@ export async function withCompanionSession<T>(
 				}
 			: undefined,
 	}
-	const commands = new CompanionPrototype(client, { signal: active })
-	const onEvent = (event: Parameters<CompanionPrototype['receiveEvent']>[0]): void => {
+	const commands = new CompanionCommands(client, { signal: active })
+	const onEvent = (event: Parameters<CompanionCommands['receiveEvent']>[0]): void => {
 		unmatched = describeUnmatched(event.data) ?? unmatched
 		commands.receiveEvent(event)
 	}

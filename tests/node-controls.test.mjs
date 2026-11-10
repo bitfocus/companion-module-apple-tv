@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { CompanionPrototype, UnsupportedCommand } from '../dist/prototype/companion.js'
-import { CommandQueue, CommandNotSent } from '../dist/prototype/queue.js'
+import { CompanionCommands, UnsupportedCommand } from '../dist/device/companion.js'
+import { CommandQueue, CommandNotSent } from '../dist/device/queue.js'
 
 const reply = (entries = []) =>
 	new Map([
@@ -36,7 +36,7 @@ function fixture(options = {}) {
 			events.push({ id, content: envelope.get('_c'), time })
 		},
 	}
-	const controls = new CompanionPrototype(client, {
+	const controls = new CompanionCommands(client, {
 		now: () => time,
 		pause: async (ms) => {
 			pauses.push(ms)

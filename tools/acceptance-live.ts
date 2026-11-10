@@ -3,7 +3,7 @@ import { open } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
 import { PilotStopped, previewAcceptance, runAcceptance, type AcceptanceMode } from './acceptance.js'
 import { loadTestCredentials } from './credentials.js'
-import { NodeController } from '../src/prototype/controller.js'
+import { NodeController } from '../src/device/controller.js'
 
 async function main(): Promise<void> {
 	const { values } = parseArgs({
@@ -29,7 +29,7 @@ async function main(): Promise<void> {
   node dist-tools/tools/acceptance-live.js --mode audio-output --run --credentials /private/test.json --report /private/audio-output.json
 
 Without --run: offline preview only; no credential access or network connection.
-Run only after the owner is watching. Wake mode requires an asleep TV; other modes require it awake.
+Run only after someone is watching. Wake mode requires an asleep TV; other modes require it awake.
 Default --mode close-app: open the app, enter App Switcher, swipe up, then stop.
 Close-app and remaining modes require one exact app-name match.
 Explicit --mode power: sleep, wake, then request Wake again while already On.

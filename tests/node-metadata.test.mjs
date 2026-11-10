@@ -3,7 +3,7 @@ import { EventEmitter, once } from 'node:events'
 import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { MRPMessage } from 'node-appletv-remote'
-import { MetadataState } from '../dist/prototype/metadata.js'
+import { MetadataState } from '../dist/device/metadata.js'
 import { observeMetadata } from '../dist-tools/tools/metadata-pilot.js'
 
 const playerPath = (client = 'test.player', player = 'main') => ({

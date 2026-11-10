@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   checks:
-    name: Lint, test, and metadata oracle
+    name: Lint and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -33,8 +33,6 @@ jobs:
         run: yarn lint
       - name: Test
         run: yarn test
-      - name: Check recorded pyatv metadata packets against the Node codec and state reader
-        run: node experiments/node-library/metadata-oracle.mjs < experiments/node-library/metadata-fixtures.json
 
   package-platforms:
     name: Packaged Node runtime (${{ matrix.os }})

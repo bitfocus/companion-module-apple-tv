@@ -20,8 +20,7 @@ new attempt. Disabling the connection cancels a pending attempt.
 Remote command offers navigation, playback, volume, seeks, swipes, App Switcher,
 Control Center, Screensaver and power. Launch App lists the TV's applications.
 Seeks sent faster than the TV answers, such as from an encoder, are combined into
-fewer skips of up to 60 seconds each; opposite turns subtract. Fast YouTube scrubbing
-with an encoder was confirmed on a real Apple TV.
+fewer skips of up to 60 seconds each; opposite turns subtract.
 Available playback commands and Now Playing metadata depend on the active app.
 Text entry is not implemented.
 
@@ -61,7 +60,7 @@ to AirPods does not automatically restore it. **Unavailable** means the module
 cannot safely restore a level. Numeric volume does not prove perceived loudness.
 
 Wake uses Home when the TV reports Off and returns to the Home screen. An
-immediate sleep/wake cycle is not qualified; allow the TV to finish sleeping.
+immediate sleep/wake cycle can fail; allow the TV to finish sleeping.
 Commands are not replayed after failure. `last_result` reports dispatch, not a
 physical result. Connection loss clears stale metadata and reconnects using
 saved keys without a new PIN prompt.

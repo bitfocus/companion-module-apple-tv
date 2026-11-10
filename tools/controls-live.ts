@@ -2,8 +2,8 @@
 import { parseArgs } from 'node:util'
 import { setTimeout as delay } from 'node:timers/promises'
 import { loadTestCredentials } from './credentials.js'
-import { NodeController, type RemoteAction } from '../src/prototype/controller.js'
-import type { Button, Direction, MediaCommand } from '../src/prototype/companion.js'
+import { NodeController, type RemoteAction } from '../src/device/controller.js'
+import type { Button, Direction, MediaCommand } from '../src/device/companion.js'
 
 async function main(): Promise<void> {
 	const { values } = parseArgs({

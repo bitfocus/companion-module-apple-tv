@@ -1,11 +1,11 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { opackEncode, opackDecode, CompanionSession, CompanionConnection, FrameType } from 'node-appletv-remote'
-import { CompanionPrototype } from '../dist/prototype/companion.js'
+import { CompanionCommands } from '../dist/device/companion.js'
 
 function fixture(reply = new Map()) {
 	const requests = []
-	const prototype = new CompanionPrototype({
+	const commands = new CompanionCommands({
 		async sendCompanionRequest(identifier, envelope, timeout) {
 			const bytes = opackEncode(envelope)
 			requests.push({ identifier, bytes, envelope: opackDecode(bytes), timeout })
@@ -16,7 +16,7 @@ function fixture(reply = new Map()) {
 			])
 		},
 	})
-	return { prototype, requests }
+	return { commands, requests }
 }
 
 test('app discovery decodes an independently generated compressed device reply', async () => {
@@ -25,8 +25,8 @@ test('app discovery decodes an independently generated compressed device reply',
 		'e2425f740b425f63e24f636f6d2e6578616d706c652e6f6e654b4578616d706c65204170704f636f6d2e6578616d706c652e74776fa3',
 		'hex',
 	)
-	const { prototype, requests } = fixture(opackDecode(packet).get('_c'))
-	assert.deepEqual(await prototype.listApps(), [
+	const { commands, requests } = fixture(opackDecode(packet).get('_c'))
+	assert.deepEqual(await commands.listApps(), [
 		{ id: 'com.example.one', name: 'Example App' },
 		{ id: 'com.example.two', name: 'Example App' },
 	])
@@ -35,8 +35,8 @@ test('app discovery decodes an independently generated compressed device reply',
 })
 
 test('app launching uses a nested Companion request through the public API', async () => {
-	const { prototype, requests } = fixture()
-	await prototype.launchApp('com.example.player')
+	const { commands, requests } = fixture()
+	await commands.launchApp('com.example.player')
 	assert.deepEqual(
 		requests.map(({ identifier, envelope }) => [identifier, envelope]),
 		[
@@ -53,8 +53,8 @@ test('app launching uses a nested Companion request through the public API', asy
 
 for (const seconds of [-30, -10, 10, 30]) {
 	test(`seeking ${seconds} seconds preserves a floating-point wire value`, async () => {
-		const { prototype, requests } = fixture()
-		await prototype.seek(seconds)
+		const { commands, requests } = fixture()
+		await commands.seek(seconds)
 		const request = requests[0]
 		const expected = Buffer.alloc(9)
 		expected[0] = 0x36 // Published OPACK float64 tag.
@@ -67,10 +67,10 @@ for (const seconds of [-30, -10, 10, 30]) {
 }
 
 test('volume read/write preserves the zero and full-volume floating-point endpoints', async () => {
-	const { prototype, requests } = fixture(new Map([['_vol', 0.42]]))
-	assert.equal(await prototype.readVolume(), 42)
+	const { commands, requests } = fixture(new Map([['_vol', 0.42]]))
+	assert.equal(await commands.readVolume(), 42)
 	for (const percent of [0, 42, 100]) {
-		await prototype.setVolume(percent)
+		await commands.setVolume(percent)
 		const request = requests.at(-1)
 		assert.equal(request.envelope.get('_c').get('_mcc'), 6)
 		assert.equal(request.envelope.get('_c').get('_vol'), percent / 100)
@@ -87,8 +87,8 @@ test('power feedback uses reported state and preserves unknown values', async ()
 		[0, 'Unknown'],
 		[99, 'Unknown'],
 	]) {
-		const { prototype, requests } = fixture(new Map([['state', state]]))
-		assert.equal(await prototype.readPower(), expected)
+		const { commands, requests } = fixture(new Map([['state', state]]))
+		assert.equal(await commands.readPower(), expected)
 		assert.deepEqual(
 			requests.map((r) => r.identifier),
 			['FetchAttentionState'],
@@ -97,16 +97,16 @@ test('power feedback uses reported state and preserves unknown values', async ()
 })
 
 test('invalid local input is rejected before any request is sent', async () => {
-	const { prototype, requests } = fixture()
-	for (const seconds of [0, 61, -61, Infinity, NaN]) await assert.rejects(prototype.seek(seconds), RangeError)
-	for (const volume of [-1, 101, NaN]) await assert.rejects(prototype.setVolume(volume), RangeError)
-	await assert.rejects(prototype.launchApp(' '), RangeError)
+	const { commands, requests } = fixture()
+	for (const seconds of [0, 61, -61, Infinity, NaN]) await assert.rejects(commands.seek(seconds), RangeError)
+	for (const volume of [-1, 101, NaN]) await assert.rejects(commands.setVolume(volume), RangeError)
+	await assert.rejects(commands.launchApp(' '), RangeError)
 	assert.equal(requests.length, 0)
 })
 
 test('a timeout never retries a possibly delivered command', async () => {
-	const { prototype, requests } = fixture(new Error('timeout'))
-	await assert.rejects(prototype.launchApp('com.example.player'), /timeout/)
+	const { commands, requests } = fixture(new Error('timeout'))
+	await assert.rejects(commands.launchApp('com.example.player'), /timeout/)
 	assert.equal(requests.length, 1)
 })
 
@@ -122,11 +122,11 @@ test('malformed or rejected replies are not presented as successful controls', a
 			['_c', new Map()],
 		]),
 	]) {
-		const prototype = new CompanionPrototype({ sendCompanionRequest: async () => reply })
-		await assert.rejects(prototype.launchApp('com.example.player'))
+		const commands = new CompanionCommands({ sendCompanionRequest: async () => reply })
+		await assert.rejects(commands.launchApp('com.example.player'))
 	}
-	const { prototype } = fixture(new Map([['_vol', 2]]))
-	await assert.rejects(prototype.readVolume(), /unavailable/)
+	const { commands } = fixture(new Map([['_vol', 2]]))
+	await assert.rejects(commands.readVolume(), /unavailable/)
 })
 
 test('patched npm package interoperates with independently generated encrypted Companion frames', () => {
