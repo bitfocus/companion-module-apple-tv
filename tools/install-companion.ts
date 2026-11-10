@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 const HELP = `Install the built package into the Companion running on this computer:
   yarn companion:install                 build, package, install and switch the connection
   node dist-tools/tools/install-companion.js --use 1.0.0   switch back to an installed version
+  node dist-tools/tools/install-companion.js --use latest  let Companion pick the newest stable version
 
 Options:
   --connection LABEL_OR_ID   needed only when more than one Apple TV connection exists
@@ -87,7 +88,8 @@ async function useVersion(companion: Companion, connection: Connection, version:
 	const problem = await companion.call('mutation', 'instances.connections.setModuleAndVersion', {
 		connectionId: connection.id,
 		moduleId: MODULE_ID,
-		versionId: version,
+		// Companion picks the newest installed stable version for null.
+		versionId: version === 'latest' ? null : version,
 	})
 	if (typeof problem === 'string') throw new Error(problem)
 }
@@ -168,9 +170,12 @@ async function main(): Promise<void> {
 			await install(companion, connection, version, values.replace)
 		}
 		await useVersion(companion, connection, version)
-		console.log(`${connection.label} now runs ${MODULE_ID} ${version} (was ${connection.moduleVersionId ?? 'latest'})`)
-		if (connection.moduleVersionId && connection.moduleVersionId !== version)
-			console.log(`To go back: node dist-tools/tools/install-companion.js --use ${connection.moduleVersionId}`)
+		const previous = connection.moduleVersionId ?? 'latest'
+		console.log(`${connection.label} now runs ${MODULE_ID} ${version} (was ${previous})`)
+		if (previous !== version) {
+			const target = `--connection ${JSON.stringify(connection.id)} --url ${JSON.stringify(values.url)}`
+			console.log(`To go back: node dist-tools/tools/install-companion.js --use ${previous} ${target}`)
+		}
 		await waitForStatus(values.url, connection.id)
 	} finally {
 		companion.close()

@@ -2,7 +2,7 @@ import { CompanionPairSetup, scan, type DiscoveredDevice, type HAPCredentials } 
 import { NodeController, SeekCancelled, type ControllerLog, type RemoteAction } from './device/controller.js'
 import { bounded } from './device/session.js'
 import { CommandNotSent } from './device/queue.js'
-import { CompanionRequestRejected, UnsupportedCommand } from './device/companion.js'
+import { CompanionRequestRejected, PowerStateUnknown, UnsupportedCommand } from './device/companion.js'
 import { decodePairing, encodePairing, type ModuleSecrets, type SavedPairing } from './node-credentials.js'
 import { displayDefaults, displayValues, VolumeText, type DisplayValues } from './display.js'
 import { PlaybackClock } from './playback.js'
@@ -417,13 +417,15 @@ export class NodeBackend {
 						? 'opposite seeks cancelled out; nothing sent'
 						: error instanceof CommandNotSent
 							? 'not sent; connection changed or command expired'
-							: error instanceof UnsupportedCommand
-								? 'unavailable for current playback or audio output'
-								: error instanceof RangeError
-									? 'invalid option; not sent'
-									: error instanceof CompanionRequestRejected
-										? 'rejected by Apple TV; not retried'
-										: 'delivery uncertain; not retried',
+							: error instanceof PowerStateUnknown
+								? 'power state unknown; not sent'
+								: error instanceof UnsupportedCommand
+									? 'unavailable for current playback or audio output'
+									: error instanceof RangeError
+										? 'invalid option; not sent'
+										: error instanceof CompanionRequestRejected
+											? 'rejected by Apple TV; not retried'
+											: 'delivery uncertain; not retried',
 			})
 		}
 	}
