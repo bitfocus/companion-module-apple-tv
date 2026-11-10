@@ -287,6 +287,7 @@ test('commands dispatch once and show bounded error messages without leaking pro
 			new SeekCancelled('private'),
 			new UnsupportedCommand('private'),
 			new CompanionRequestRejected('private'),
+			new RangeError('private'),
 			new Error('private'),
 		]) {
 			let sends = 0

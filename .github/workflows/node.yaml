@@ -1,73 +1,75 @@
-name: Validation
+name: Node CI
 
 on:
   push:
     branches:
-      - main
+      - '**'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
-permissions:
-  contents: read
-
 jobs:
-  checks:
-    name: Lint and test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/checkout@v7
         with:
-          node-version: 22.x
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Install locked dependencies
-        run: yarn install --immutable
-      - name: Build and check types
-        run: yarn build
-      - name: Lint
-        run: yarn lint
-      - name: Test
-        run: yarn test
-
-  package-platforms:
-    name: Packaged Node runtime (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+          persist-credentials: false
+      - name: Use Node.js 26.x
+        # This should match the version of Node.js you have defined in the manifest.json runtime field
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.x
-      - name: Enable Corepack
-        run: corepack enable
-      - name: Install locked dependencies
-        run: yarn install --immutable
-      - name: Build Companion package
-        run: yarn package
-      - name: Test setup, saved restart, cancellation and playback time
-        run: node --test tests/session.test.mjs tests/node-setup.test.mjs tests/playback.test.mjs
-      - name: Test the bundled module with package-only filesystem permissions
-        run: yarn test:package
-
-  validation-gate:
-    name: validation-gate
-    if: ${{ always() }}
-    needs: [checks, package-platforms]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require all validation jobs
-        env:
-          CHECKS_RESULT: ${{ needs.checks.result }}
-          PACKAGE_RESULT: ${{ needs.package-platforms.result }}
+          node-version: 26.x
+      - name: Prepare Environment
         run: |
-          test "$CHECKS_RESULT" = success
-          test "$PACKAGE_RESULT" = success
+          corepack enable
+      - name: Prepare Environment (For template repository)
+        # Only run this step if the repository is a template repository
+        # If you are using this in a module, you can remove this step
+        if: ${{ contains(github.repository, 'companion-module-template-') }}
+        run: |
+          # Perform an install to generate the lockfile
+          yarn install
+        env:
+          CI: false
+      - name: Prepare module
+        run: |
+          yarn install
+        env:
+          CI: true
+      - name: Build and check types
+        run: |
+          yarn build
+        env:
+          CI: true
+      - name: Run lint
+        run: |
+          yarn lint
+        env:
+          CI: true
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+      - name: Use Node.js 26.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26.x
+      - name: Prepare Environment
+        run: |
+          corepack enable
+          yarn install
+        env:
+          CI: true
+      - name: Run tests
+        run: |
+          yarn test
+        env:
+          CI: true

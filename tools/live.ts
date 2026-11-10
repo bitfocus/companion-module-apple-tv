@@ -5,7 +5,7 @@ import { CompanionRequestRejected } from '../src/device/companion.js'
 import { loadTestCredentials, prepareCredentialFile, saveTestCredentials } from './credentials.js'
 import { bounded, withCompanionSession } from '../src/device/session.js'
 
-const HELP = `Separate Node Companion test (Node 22):
+const HELP = `Separate Node Companion test (Node 26):
   node dist-tools/tools/live.js scan
   node dist-tools/tools/live.js pair --device DEVICE_ID --credentials /private/directory/test.json
   node dist-tools/tools/live.js check --credentials /private/directory/test.json

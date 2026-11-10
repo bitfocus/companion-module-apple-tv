@@ -137,11 +137,15 @@ take more than 8 seconds; idle nearby AirPods usually confirm in under a second.
 
 ## Development
 
-Use Node 22 and Yarn 4. `yarn build`, `yarn lint` and `yarn test` are the usual
-checks. `yarn package` builds the Companion package and `yarn test:package` loads
-it with filesystem access restricted to the package.
+Use Node 26 and Yarn 4. `yarn build`, `yarn lint` and `yarn test` are the usual
+checks; `yarn test` also builds the developer tools in `tools/`. `yarn package`
+builds the Companion package and `yarn test:package` loads it with filesystem
+access restricted to the package.
+`yarn companion:install` installs that package into the Companion running on
+this computer and switches the Apple TV connection to it; it prints the command
+that switches back.
 
-CI builds and packages the module on Linux, macOS and Windows. Synthetic tests
+CI builds, lints and tests the module on Linux. Synthetic tests
 cover setup, secret persistence, restart, cancellation, encryption,
 metadata, queue expiry and reconnect without replay. Metadata decoding is also
 checked against packets recorded from an independent implementation. Hardware testing so far covers

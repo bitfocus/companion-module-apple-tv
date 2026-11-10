@@ -360,7 +360,10 @@ export class NodeBackend {
 			app: playing.app ?? '',
 			playback_state: playing.state,
 			position: position === undefined || !Number.isFinite(position) ? '' : String(Math.floor(position)),
-			duration: playing.duration === undefined ? '' : String(playing.duration),
+			duration:
+				playing.duration === undefined || !Number.isFinite(playing.duration)
+					? ''
+					: String(Math.floor(playing.duration)),
 		}
 		this.router.observe(this.outputLink(controller, ready))
 		const displayed = { ...values, ...displayValues(values) }
@@ -416,9 +419,11 @@ export class NodeBackend {
 							? 'not sent; connection changed or command expired'
 							: error instanceof UnsupportedCommand
 								? 'unavailable for current playback or audio output'
-								: error instanceof CompanionRequestRejected
-									? 'rejected by Apple TV; not retried'
-									: 'delivery uncertain; not retried',
+								: error instanceof RangeError
+									? 'invalid option; not sent'
+									: error instanceof CompanionRequestRejected
+										? 'rejected by Apple TV; not retried'
+										: 'delivery uncertain; not retried',
 			})
 		}
 	}

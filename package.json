@@ -1,20 +1,22 @@
 {
   "name": "companion-module-apple-tv",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/main.js",
   "type": "module",
   "scripts": {
     "postinstall": "husky",
     "format": "prettier -w .",
     "package": "run build && companion-module-build",
-    "build": "rimraf dist dist-tools && run build:main && run build:tools",
+    "build": "rimraf dist && run build:main",
     "build:main": "tsc -p tsconfig.build.json",
-    "build:tools": "tsc -p tsconfig.tools.json",
+    "build:all": "run build && run build:tools",
+    "build:tools": "rimraf dist-tools && tsc -p tsconfig.tools.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "lint:raw": "eslint",
     "lint": "run lint:raw .",
-    "test": "node --test tests/*.test.mjs",
-    "test:package": "node tests/package-smoke.mjs"
+    "test": "run build:all && node --test tests/*.test.mjs",
+    "test:package": "node tests/package-smoke.mjs",
+    "companion:install": "run package && run build:tools && node dist-tools/tools/install-companion.js"
   },
   "license": "MIT",
   "repository": {
@@ -22,11 +24,11 @@
     "url": "git+https://github.com/bitfocus/companion-module-apple-tv.git"
   },
   "engines": {
-    "node": "^22.22.1",
+    "node": "^26",
     "yarn": "^4"
   },
   "dependencies": {
-    "@companion-module/base": "2.2.1",
+    "@companion-module/base": "~2.2.1",
     "node-appletv-remote": "patch:node-appletv-remote@npm%3A0.5.0#~/patches/node-appletv-remote-npm-0.5.0-5edebab564.patch"
   },
   "devDependencies": {

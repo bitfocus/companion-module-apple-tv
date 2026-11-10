@@ -16,7 +16,7 @@ try {
 	const fixture = resolve('tests/fixtures/packaged-module-smoke.mjs')
 	execFileSync(
 		process.execPath,
-		['--experimental-permission', `--allow-fs-read=${root}`, `--allow-fs-read=${fixture}`, fixture, root],
+		['--permission', `--allow-fs-read=${root}`, `--allow-fs-read=${fixture}`, fixture, root],
 		{ stdio: 'inherit', timeout: 30000 },
 	)
 } finally {
