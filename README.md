@@ -161,6 +161,18 @@ CI and unit tests use synthetic peers and fixtures. Never start a pairing
 automatically or retry one after an uncertain result. Never commit pairing keys,
 credentials, device identifiers, addresses or raw captures; use invented values.
 
+### Releasing
+
+1. Bump `version` in `package.json` in the pull request and merge it once CI is
+   green.
+2. Wait for CI on the merge commit. Tags here cannot be moved or deleted, so a
+   bad release is fixed with a new version.
+3. Publish a GitHub release named `Apple TV X.Y.Z` with tag `vX.Y.Z` on that
+   commit. Its notes are the release notes. The release workflow attaches the
+   Companion package.
+4. Submit `vX.Y.Z` for review at https://developer.bitfocus.io/ and paste the
+   same release notes.
+
 ## Provenance
 
 The project started with Bitfocus's TypeScript template. The module uses the
