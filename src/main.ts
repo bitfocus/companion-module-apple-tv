@@ -1,37 +1,24 @@
-import {
-	InstanceBase,
-	InstanceStatus,
-	combineRgb,
-	type SomeCompanionConfigField,
-	type CompanionStaticUpgradeScript,
-} from '@companion-module/base'
+import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import { displayDefaults, type DisplayValues } from './display.js'
-import { NodeBackend, type BackendOptions, type PersonalOutputValues, type SetupState } from './node-backend.js'
-import type { RouteTarget } from './personal-output.js'
+import { displayDefaults } from './display.js'
+import { NodeBackend, type BackendOptions, type SetupState } from './node-backend.js'
 import type { ModuleSecrets } from './node-credentials.js'
-import { remoteActions } from './actions.js'
-import { buildPresets } from './presets.js'
+import { UpdateActions, type ActionsSchema } from './actions.js'
+import { UpdateFeedbacks, type FeedbacksSchema } from './feedbacks.js'
+import { UpdateVariableDefinitions, type VariablesSchema } from './variables.js'
+import { UpgradeScripts } from './upgrades.js'
+import { UpdatePresets } from './presets.js'
 import { MRPMessage } from 'node-appletv-remote'
 
 export type ModuleSchema = {
 	config: ModuleConfig
 	secrets: ModuleSecrets
-	actions: {
-		command: { options: { command: string } }
-		launchApp: { options: { appId: string } }
-		personalOutput: { options: { target: string } }
-	}
-	feedbacks: {
-		personalOutputActive: { type: 'boolean'; options: Record<string, never> }
-		powerOn: { type: 'boolean'; options: Record<string, never> }
-	}
-	variables: { connection: string; last_result: string } & DisplayValues & PersonalOutputValues
+	actions: ActionsSchema
+	feedbacks: FeedbacksSchema
+	variables: VariablesSchema
 }
 
-const routeTargets: Record<string, RouteTarget> = { toggle: 'toggle', personal: 'personal', default: 'default' }
-
-export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets>[] = []
+export { UpgradeScripts }
 
 const statuses: Record<SetupState, InstanceStatus> = {
 	disabled: InstanceStatus.Disconnected,
@@ -48,9 +35,9 @@ const statuses: Record<SetupState, InstanceStatus> = {
 
 export default class AppleTV extends InstanceBase<ModuleSchema> {
 	config: ModuleConfig = { enabled: false, deviceId: '' }
-	private backend?: NodeBackend
-	private apps: { id: string; name: string }[] = []
-	private power = 'Unknown'
+	backend?: NodeBackend
+	apps: { id: string; name: string }[] = []
+	power = 'Unknown'
 	private configurationTasks = new Set<Promise<void>>()
 	private configurationVersion = 0
 	private destroyed = false
@@ -62,17 +49,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 	}
 
 	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets = {}): Promise<void> {
-		this.setVariableDefinitions({
-			connection: { name: 'Connection state' },
-			last_result: { name: 'Last dispatch result (not physical confirmation)' },
-			personal_output_route: {
-				name: 'Personal audio output route (Personal, Default, Connecting, Failed or Unavailable)',
-			},
-			personal_output_name: { name: 'Personal audio output name' },
-			...(Object.fromEntries(
-				Object.keys(displayDefaults).map((key) => [key, { name: key.replaceAll('_', ' ') }]),
-			) as Record<keyof DisplayValues, { name: string }>),
-		})
+		UpdateVariableDefinitions(this)
 		this.setVariableValues({
 			...displayDefaults,
 			connection: 'disabled',
@@ -115,25 +92,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 			},
 			this.backendOptions,
 		)
-		this.defineActions()
-		this.setFeedbackDefinitions({
-			personalOutputActive: {
-				type: 'boolean',
-				name: 'Personal audio output active',
-				description: 'True while the TV reports the configured personal output in its audio route',
-				defaultStyle: { bgcolor: combineRgb(0, 102, 204), color: combineRgb(255, 255, 255) },
-				options: [],
-				callback: () => this.backend?.personalOutputActive ?? false,
-			},
-			powerOn: {
-				type: 'boolean',
-				name: 'Apple TV is on',
-				description: 'True while the TV reports that it is awake; false when asleep, unknown or disconnected',
-				defaultStyle: { bgcolor: combineRgb(0, 153, 0), color: combineRgb(255, 255, 255) },
-				options: [],
-				callback: () => this.power === 'On',
-			},
-		})
+		UpdateFeedbacks(this)
 		await this.configUpdated(config, secrets)
 	}
 	getConfigFields(): SomeCompanionConfigField[] {
@@ -143,11 +102,14 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		this.config = config
 		const backend = this.backend
 		if (!backend) return
+		// Preset text names the connection label, which may have just changed.
+		this.defineActions()
 		const version = ++this.configurationVersion
 		// Companion's configuration IPC has a shorter deadline than discovery or PIN
 		// verification. Acknowledge Save now and publish progress through callbacks.
-		const task = backend.configure(config, secrets).catch(() => {
+		const task = backend.configure(config, secrets).catch((error: unknown) => {
 			if (this.backend !== backend || this.configurationVersion !== version) return
+			this.log('error', `Setup failed: ${error instanceof Error ? error.message : String(error)}`)
 			this.updateStatus(InstanceStatus.ConnectionFailure, 'Setup failed; disable the connection and try again')
 			this.setVariableValues({ connection: 'error' })
 		})
@@ -155,67 +117,9 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		void task.then(() => this.configurationTasks.delete(task))
 	}
 	private defineActions(): void {
-		const { structure, presets } = buildPresets(this.label, this.apps)
-		this.setPresetDefinitions(structure, presets)
-		this.setActionDefinitions({
-			command: {
-				name: 'Remote command',
-				options: [
-					{
-						id: 'command',
-						type: 'dropdown',
-						label: 'Command',
-						default: 'select',
-						choices: Object.entries(remoteActions).map(([id, { label }]) => ({ id, label })),
-					},
-				],
-				callback: async (event) =>
-					this.backend?.perform(
-						Object.hasOwn(remoteActions, event.options.command)
-							? remoteActions[event.options.command]?.action
-							: undefined,
-					),
-			},
-			launchApp: {
-				name: 'Launch App',
-				options: [
-					{
-						id: 'appId',
-						type: 'dropdown',
-						label: 'App',
-						default: '',
-						allowCustom: true,
-						choices: this.apps.map((app) => ({ id: app.id, label: `${app.name} (${app.id})` })),
-					},
-				],
-				callback: async (event) => this.backend?.perform({ kind: 'launch', bundleId: event.options.appId }),
-			},
-			personalOutput: {
-				name: 'Personal audio output',
-				description:
-					'Toggle or select the configured personal output, such as AirPods, as the system audio route. Sends one request; the route variable confirms the result.',
-				options: [
-					{
-						id: 'target',
-						type: 'dropdown',
-						label: 'Route',
-						default: 'toggle',
-						choices: [
-							{ id: 'toggle', label: 'Toggle personal output' },
-							{ id: 'personal', label: 'Route to personal output' },
-							{ id: 'default', label: 'Route to default output' },
-						],
-					},
-				],
-				callback: async (event) => {
-					const target = Object.hasOwn(routeTargets, event.options.target)
-						? routeTargets[event.options.target]
-						: undefined
-					if (!target) this.setVariableValues({ last_result: 'unknown output route; not sent' })
-					else await this.backend?.selectPersonalOutput(target)
-				},
-			},
-		})
+		// Presets reference these actions, so define the actions first.
+		UpdateActions(this)
+		UpdatePresets(this)
 	}
 	async destroy(): Promise<void> {
 		this.destroyed = true

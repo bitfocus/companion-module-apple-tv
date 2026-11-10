@@ -5,7 +5,7 @@ import { NodeBackend } from '../dist/node-backend.js'
 import { decodePairing, encodePairing } from '../dist/node-credentials.js'
 import { CommandNotSent } from '../dist/device/queue.js'
 import { SeekCancelled } from '../dist/device/controller.js'
-import { UnsupportedCommand, CompanionRequestRejected } from '../dist/device/companion.js'
+import { UnsupportedCommand, CompanionRequestRejected, PowerStateUnknown } from '../dist/device/companion.js'
 import {
 	config,
 	credentials,
@@ -286,7 +286,9 @@ test('commands dispatch once and show bounded error messages without leaking pro
 			new CommandNotSent('private'),
 			new SeekCancelled('private'),
 			new UnsupportedCommand('private'),
+			new PowerStateUnknown('private'),
 			new CompanionRequestRejected('private'),
+			new RangeError('private'),
 			new Error('private'),
 		]) {
 			let sends = 0

@@ -18,7 +18,7 @@ async function main(): Promise<void> {
 		},
 	})
 	if (values.help) {
-		process.stdout.write(`Prepared physical test (Node 22):
+		process.stdout.write(`Prepared physical test (Node 26):
   node dist-tools/tools/acceptance-live.js --app YouTube
   node dist-tools/tools/acceptance-live.js --app YouTube --run --credentials /private/test.json --report /private/result.json
   node dist-tools/tools/acceptance-live.js --mode power --run --credentials /private/test.json --report /private/power.json

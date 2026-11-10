@@ -64,3 +64,32 @@ immediate sleep/wake cycle can fail; allow the TV to finish sleeping.
 Commands are not replayed after failure. `last_result` reports dispatch, not a
 physical result. Connection loss clears stale metadata and reconnects using
 saved keys without a new PIN prompt.
+
+## Feedbacks
+
+- **Apple TV is on**: true while the TV reports that it is awake.
+- **Personal audio output active**: true while the TV reports the configured
+  personal output in its audio route.
+
+## Variables
+
+Use them on a button as `$(label:variable)`, where label is this connection's
+name in Companion.
+
+| Variable                | Shows                                                                       |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `power`                 | `On`, `Off` or `Unknown`                                                    |
+| `title`                 | Now playing title, or `Nothing Playing`                                     |
+| `artist`                | Now playing artist                                                          |
+| `app`                   | App that is playing                                                         |
+| `playback_state`        | `Playing`, `Paused`, `Stopped`, `Seeking`, `Idle`, `Interrupted`, `Unknown` |
+| `position`, `duration`  | Whole seconds                                                               |
+| `elapsed`, `remaining`  | Time as `m:ss` or `h:mm:ss`                                                 |
+| `progress`              | Percent played, `0` to `100`                                                |
+| `volume`                | Volume as a whole percent; blank when the TV does not report it             |
+| `mute_state`            | `Muted`, `Unmuted` or `Unavailable`                                         |
+| `metadata_state`        | `Connecting`, `Connected` or `Offline`                                      |
+| `connection`            | Setup state, such as `ready`, `connecting`, `reconnecting` or `error`       |
+| `last_result`           | Result of the last command sent; not proof the TV acted on it               |
+| `personal_output_route` | See Personal audio output above                                             |
+| `personal_output_name`  | Remembered personal output name                                             |

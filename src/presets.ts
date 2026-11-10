@@ -1,5 +1,6 @@
 import { combineRgb, type CompanionPresetDefinitions, type CompanionPresetSection } from '@companion-module/base'
 import { remoteActions } from './actions.js'
+import type AppleTV from './main.js'
 import type { ModuleSchema } from './main.js'
 
 const white = combineRgb(255, 255, 255)
@@ -79,4 +80,9 @@ export function buildPresets(
 		{ id: 'now_playing', name: 'Now Playing', definitions: ['now_playing'] },
 	]
 	return { structure, presets }
+}
+
+export function UpdatePresets(self: AppleTV): void {
+	const { structure, presets } = buildPresets(self.label, self.apps)
+	self.setPresetDefinitions(structure, presets)
 }

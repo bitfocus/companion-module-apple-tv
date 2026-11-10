@@ -1,4 +1,12 @@
 import type { RemoteAction } from './device/controller.js'
+import type AppleTV from './main.js'
+import type { RouteTarget } from './personal-output.js'
+
+export type ActionsSchema = {
+	command: { options: { command: string } }
+	launchApp: { options: { appId: string } }
+	personalOutput: { options: { target: string } }
+}
 
 export const remoteActions: Record<
 	string,
@@ -47,4 +55,68 @@ export const remoteActions: Record<
 	swipeDown: { label: 'Swipe Down', action: { kind: 'swipe', direction: 'down' } },
 	swipeLeft: { label: 'Swipe Left', action: { kind: 'swipe', direction: 'left' } },
 	swipeRight: { label: 'Swipe Right', action: { kind: 'swipe', direction: 'right' } },
+}
+
+const routeTargets: Record<string, RouteTarget> = { toggle: 'toggle', personal: 'personal', default: 'default' }
+
+export function UpdateActions(self: AppleTV): void {
+	self.setActionDefinitions({
+		command: {
+			name: 'Remote command',
+			options: [
+				{
+					id: 'command',
+					type: 'dropdown',
+					label: 'Command',
+					default: 'select',
+					choices: Object.entries(remoteActions).map(([id, { label }]) => ({ id, label })),
+				},
+			],
+			callback: async (event) =>
+				self.backend?.perform(
+					Object.hasOwn(remoteActions, event.options.command)
+						? remoteActions[event.options.command]?.action
+						: undefined,
+				),
+		},
+		launchApp: {
+			name: 'Launch App',
+			options: [
+				{
+					id: 'appId',
+					type: 'dropdown',
+					label: 'App',
+					default: '',
+					allowCustom: true,
+					choices: self.apps.map((app) => ({ id: app.id, label: `${app.name} (${app.id})` })),
+				},
+			],
+			callback: async (event) => self.backend?.perform({ kind: 'launch', bundleId: event.options.appId }),
+		},
+		personalOutput: {
+			name: 'Personal audio output',
+			description:
+				'Toggle or select the configured personal output, such as AirPods, as the system audio route. Sends one request; the route variable confirms the result.',
+			options: [
+				{
+					id: 'target',
+					type: 'dropdown',
+					label: 'Route',
+					default: 'toggle',
+					choices: [
+						{ id: 'toggle', label: 'Toggle personal output' },
+						{ id: 'personal', label: 'Route to personal output' },
+						{ id: 'default', label: 'Route to default output' },
+					],
+				},
+			],
+			callback: async (event) => {
+				const target = Object.hasOwn(routeTargets, event.options.target)
+					? routeTargets[event.options.target]
+					: undefined
+				if (!target) self.setVariableValues({ last_result: 'unknown output route; not sent' })
+				else await self.backend?.selectPersonalOutput(target)
+			},
+		},
+	})
 }

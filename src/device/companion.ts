@@ -39,6 +39,8 @@ type Options = {
 
 export class CompanionRequestRejected extends Error {}
 export class UnsupportedCommand extends Error {}
+/** The TV did not report whether it is awake, so no power command was sent. */
+export class PowerStateUnknown extends UnsupportedCommand {}
 
 function powerState(state: unknown): Power {
 	return state === 1 ? 'Off' : state === 2 || state === 3 || state === 4 ? 'On' : 'Unknown'
@@ -359,7 +361,7 @@ export class CompanionCommands {
 
 	async togglePower(): Promise<void> {
 		const state = await this.readPower({ allowCached: false })
-		if (state === 'Unknown') throw new UnsupportedCommand('Unknown power state; no power command sent')
+		if (state === 'Unknown') throw new PowerStateUnknown('Unknown power state; no power command sent')
 		await this.setPower(state === 'On' ? 'Off' : 'On')
 	}
 
@@ -372,7 +374,7 @@ export class CompanionCommands {
 			this.options.signal?.throwIfAborted()
 			const current = this.power
 			if (!this.active || current === 'Unknown')
-				throw new UnsupportedCommand('Unknown power state; no power command sent')
+				throw new PowerStateUnknown('Unknown power state; no power command sent')
 			if (current === 'On') return
 		}
 		const revision = this.powerRevision

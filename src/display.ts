@@ -34,7 +34,7 @@ export function displayValues(values: Record<string, string>): Partial<DisplayVa
 		if (Number.isFinite(position) && position >= 0 && Number.isFinite(duration) && duration >= 0) {
 			output.elapsed = timeText(position)
 			output.remaining = duration > 0 ? timeText(Math.max(0, duration - position)) : ''
-			output.progress = duration > 0 ? String(Math.max(0, Math.min(100, (position / duration) * 100))) : '0'
+			output.progress = duration > 0 ? String(Math.round(Math.max(0, Math.min(100, (position / duration) * 100)))) : '0'
 		}
 	}
 	return output
