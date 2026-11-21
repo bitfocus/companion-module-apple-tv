@@ -25,10 +25,7 @@ async function slowTakeover(configure) {
 		},
 		{ controller: () => f.controller },
 	)
-	await backend.configure(
-		{ enabled: true, deviceId: 'synthetic-tv', personalOutputId: 'synthetic-airpods' },
-		saved('synthetic-tv'),
-	)
+	await backend.configure({ deviceId: 'synthetic-tv', personalOutputId: 'synthetic-airpods' }, saved('synthetic-tv'))
 	await until(() => values.connection === 'ready' && values.personal_output_route === 'Default')
 	const readyAt = states.length
 	configure(f.metadataPeers[0])

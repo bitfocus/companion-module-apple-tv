@@ -1,5 +1,5 @@
 import { encodePairing } from '../../dist/node-credentials.js'
-export const config = { enabled: true, deviceId: 'synthetic-tv' }
+export const config = { deviceId: 'synthetic-tv' }
 export const credentials = {
 	clientId: 'synthetic-client',
 	serverId: 'synthetic-server',

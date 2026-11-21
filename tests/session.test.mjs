@@ -14,6 +14,10 @@ test('completed discovery notifies an open Companion editor with the new choices
 	try {
 		await f.module.init({ ...config, deviceId: '' }, true, {})
 		await nextTurn()
+		assert.equal(
+			f.module.getConfigFields().some((field) => field.id === 'enabled'),
+			false,
+		)
 		assert.ok(fieldsAtSave.at(-1).some((choice) => choice.id === config.deviceId))
 		f.options.discover = async () => [
 			{
@@ -62,10 +66,10 @@ function fixture() {
 	return { ...f, module: new AppleTV(context, f.options), context, source: f }
 }
 
-test('Companion entrypoint restores saved pairing and routes existing button IDs through Node', async () => {
+test('Companion entrypoint restores saved pairing with an old checkbox value and routes existing button IDs through Node', async () => {
 	const f = fixture()
 	try {
-		await f.module.init(config, false, saved())
+		await f.module.init({ ...config, enabled: false }, false, saved())
 		await nextTurn()
 		const actions = f.source.actions
 		for (const command of [
@@ -164,7 +168,7 @@ test('configuration and secret callbacks complete one pairing and preserve the p
 	}
 })
 
-test('Save returns while discovery is pending and disable cancels it before late results can publish', async () => {
+test('Save returns while discovery is pending and Companion shutdown discards late results', async () => {
 	const f = fixture()
 	const gate = Promise.withResolvers()
 	let signal
@@ -173,16 +177,18 @@ test('Save returns while discovery is pending and disable cancels it before late
 		return gate.promise
 	}
 	try {
-		await f.module.init({ enabled: true, deviceId: '' }, true, {})
+		await f.module.init({ deviceId: '' }, true, {})
 		await nextTurn()
 		assert.equal(f.values.connection, 'discovering')
-		await f.module.configUpdated({ enabled: false, deviceId: '' }, {})
+		const shuttingDown = f.module.destroy()
 		await nextTurn()
 		assert.equal(signal.aborted, true)
-		assert.equal(f.values.connection, 'disabled')
+		const stateCount = f.states.length
+		const saveCount = f.saves.length
 		gate.resolve([])
-		await nextTurn()
-		assert.equal(f.values.connection, 'disabled')
+		await shuttingDown
+		assert.equal(f.states.length, stateCount)
+		assert.equal(f.saves.length, saveCount)
 		assert.equal(f.controllers.length, 0)
 	} finally {
 		gate.resolve([])

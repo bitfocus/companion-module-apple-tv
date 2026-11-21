@@ -1,6 +1,5 @@
 import type { SomeCompanionConfigField } from '@companion-module/base'
 export type ModuleConfig = {
-	enabled: boolean
 	deviceId: string
 	pair?: boolean
 	refresh?: boolean
@@ -13,7 +12,6 @@ export function GetConfigFields(devices: DeviceChoice[] = [], selected = ''): So
 	if (selected && !devices.some((device) => device.id === selected))
 		choices.push({ id: selected, label: 'Saved Apple TV (currently undiscovered)' })
 	return [
-		{ type: 'checkbox', id: 'enabled', label: 'Enable Apple TV connection', default: true, width: 12 },
 		{ type: 'dropdown', id: 'deviceId', label: 'Apple TV', choices, default: '', width: 12, minChoicesForSearch: 6 },
 		{ type: 'checkbox', id: 'refresh', label: 'Refresh device list when saving', default: false, width: 12 },
 		{ type: 'checkbox', id: 'pair', label: 'Start pairing when saving', default: false, width: 12 },

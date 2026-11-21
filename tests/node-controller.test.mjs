@@ -597,10 +597,7 @@ test('backend toggles a learned personal output and keeps its identifier out of 
 	)
 	const names = { 'synthetic-airpods': "Someone's AirPods" }
 	try {
-		await backend.configure(
-			{ enabled: true, deviceId: 'synthetic-tv', personalOutputName: 'airpods' },
-			saved('synthetic-tv'),
-		)
+		await backend.configure({ deviceId: 'synthetic-tv', personalOutputName: 'airpods' }, saved('synthetic-tv'))
 		await until(() => values.connection === 'ready')
 		assert.equal(values.personal_output_route, 'Unavailable')
 		await backend.selectPersonalOutput('toggle')

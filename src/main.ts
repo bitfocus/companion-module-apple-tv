@@ -21,7 +21,6 @@ export type ModuleSchema = {
 export { UpgradeScripts }
 
 const statuses: Record<SetupState, InstanceStatus> = {
-	disabled: InstanceStatus.Disconnected,
 	unpaired: InstanceStatus.BadConfig,
 	discovering: InstanceStatus.Connecting,
 	pairing: InstanceStatus.Connecting,
@@ -34,7 +33,7 @@ const statuses: Record<SetupState, InstanceStatus> = {
 }
 
 export default class AppleTV extends InstanceBase<ModuleSchema> {
-	config: ModuleConfig = { enabled: false, deviceId: '' }
+	config: ModuleConfig = { deviceId: '' }
 	backend?: NodeBackend
 	apps: { id: string; name: string }[] = []
 	power = 'Unknown'
@@ -52,7 +51,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		UpdateVariableDefinitions(this)
 		this.setVariableValues({
 			...displayDefaults,
-			connection: 'disabled',
+			connection: 'connecting',
 			last_result: '',
 			personal_output_route: 'Unavailable',
 			personal_output_name: '',
