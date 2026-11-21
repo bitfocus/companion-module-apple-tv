@@ -136,17 +136,14 @@ test('failed pairing reports its stage without exposing the PIN or provider payl
 	}
 })
 
-test('disabled, changed-target and expired PIN sessions close without finishing or retaining PIN input', async () => {
-	for (const mode of ['disabled', 'changed-target', 'expired']) {
+test('shutdown, changed-target and expired PIN sessions close without finishing or retaining PIN input', async () => {
+	for (const mode of ['shutdown', 'changed-target', 'expired']) {
 		const f = fixture({ pinTimeoutMs: 15 })
 		try {
 			await f.backend.configure({ ...config, pair: true })
-			if (mode === 'expired') await delay(25)
-			else
-				await f.backend.configure(
-					mode === 'disabled' ? { ...config, enabled: false } : { ...config, deviceId: 'other-tv' },
-					{ pin: '1234' },
-				)
+			if (mode === 'shutdown') await f.backend.stop()
+			else if (mode === 'expired') await delay(25)
+			else await f.backend.configure({ ...config, deviceId: 'other-tv' }, { pin: '1234' })
 			assert.ok(f.pairs[0].destroys >= 1)
 			assert.deepEqual(f.pairs[0].finishes, [])
 			assert.ok(f.saves.every((call) => !Object.hasOwn(call.secrets, 'pin')))
@@ -304,24 +301,6 @@ test('commands dispatch once and show bounded error messages without leaking pro
 		// Each outcome, including seeks that cancelled out, reads differently.
 		assert.equal(new Set(results).size, results.length)
 	} finally {
-		await f.backend.stop()
-	}
-})
-
-test('a late disable completion cannot replace a newer ready state', async () => {
-	const f = fixture(),
-		gate = Promise.withResolvers()
-	try {
-		await f.backend.configure(config, saved())
-		f.controllers[0].stop = async () => gate.promise
-		const disabling = f.backend.configure({ ...config, enabled: false }, saved())
-		await nextTurn()
-		await f.backend.configure(config, saved())
-		gate.resolve(undefined)
-		await disabling
-		assert.equal(f.states.at(-1).state, 'ready')
-	} finally {
-		gate.resolve(undefined)
 		await f.backend.stop()
 	}
 })

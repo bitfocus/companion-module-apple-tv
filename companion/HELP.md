@@ -5,8 +5,8 @@ Requires Companion 5.1.0 or later.
 No terminal setup is required. Keep Apple TV and Companion reachable
 on the same local network.
 
-1. Enable the connection and Save. Select your Apple TV from the list. Use
-   **Refresh device list when saving** if it is missing.
+1. Select your Apple TV from the list. If it is missing, check
+   **Refresh device list when saving** and Save.
 2. Watch the TV, check **Start pairing when saving**, and Save.
 3. Enter the TV's four-digit PIN and Save while the prompt is still open.
 4. Wait for **Connected**. The PIN clears after submission; verified keys are
@@ -15,7 +15,7 @@ on the same local network.
 Pairing never starts automatically. The module waits up to three minutes, but
 the TV can close the session earlier; Companion reports when that happens.
 If pairing fails or expires, explicitly start a
-new attempt. Disabling the connection cancels a pending attempt.
+new attempt. Disabling the connection in Companion cancels a pending attempt.
 
 Remote command offers navigation, playback, volume, seeks, swipes, App Switcher,
 Control Center, Screensaver and power. Launch App lists the TV's applications.

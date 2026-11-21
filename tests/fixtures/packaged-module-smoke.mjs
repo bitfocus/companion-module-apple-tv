@@ -12,7 +12,7 @@ const controllers = []
 let actions
 let feedbacks
 let prompts = 0
-const config = { enabled: true, deviceId: 'synthetic-tv' }
+const config = { deviceId: 'synthetic-tv' }
 const credentials = {
 	clientId: 'synthetic-client',
 	serverId: 'synthetic-server',
@@ -94,7 +94,7 @@ const options = {
 const module = new AppleTV(context, options)
 try {
 	// This executes the real bundled MRP codec and loads its packaged schemas before discovery.
-	await module.init({ enabled: true, deviceId: '' }, true, {})
+	await module.init({ deviceId: '' }, true, {})
 	await settle()
 	assert.equal(values.connection, 'unpaired', JSON.stringify(states))
 	assert.ok(

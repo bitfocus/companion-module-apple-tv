@@ -11,7 +11,7 @@ Companion 5.1.0 or later. Companion 5.0.x refuses to start this module.
 ## Setup
 
 1. Import the built package into Companion and add an Apple TV connection.
-2. Enable the connection and Save. Select your Apple TV from the discovered list.
+2. Select your Apple TV from the discovered list.
    If needed, check **Refresh device list when saving** and Save again.
 3. While watching that TV, check **Start pairing when saving** and Save.
 4. Enter the four-digit PIN shown on the TV and Save while the prompt is still open.
@@ -27,7 +27,7 @@ The PIN clears after submission. The module waits up to three minutes, but the
 TV can close its session earlier. Companion reports that closure immediately.
 If pairing fails or expires, explicitly start a
 new attempt. Previous saved keys are retained until a replacement verifies.
-Disabling the connection cancels a pending attempt. Failed pairing can leave a
+Disabling the connection in Companion cancels a pending attempt. Failed pairing can leave a
 controller registration on the TV; remove only the abandoned registration from
 tvOS when retiring it.
 

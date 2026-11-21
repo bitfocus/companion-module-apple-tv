@@ -18,16 +18,7 @@ type Pairing = Pick<CompanionPairSetup, 'start' | 'finish' | 'destroy' | 'closed
 /** How the TV lists this pairing under Remote App and Devices; without it the TV shows Unknown. */
 const PAIRING_NAME = 'Companion'
 export type SetupState =
-	| 'disabled'
-	| 'unpaired'
-	| 'discovering'
-	| 'pairing'
-	| 'pin'
-	| 'verifying'
-	| 'connecting'
-	| 'ready'
-	| 'reconnecting'
-	| 'error'
+	'unpaired' | 'discovering' | 'pairing' | 'pin' | 'verifying' | 'connecting' | 'ready' | 'reconnecting' | 'error'
 export type PersonalOutputValues = { personal_output_route: PersonalRoute; personal_output_name: string }
 export type BackendHooks = {
 	save(config: ModuleConfig, secrets: ModuleSecrets): void
@@ -59,7 +50,7 @@ type PendingPair = {
 /** Owns setup and the connection; only explicit Pair starts a TV PIN prompt. */
 export class NodeBackend {
 	devices: DeviceChoice[] = []
-	private config: ModuleConfig = { enabled: false, deviceId: '' }
+	private config: ModuleConfig = { deviceId: '' }
 	private secrets: ModuleSecrets = {}
 	private generation = 0
 	private abort = new AbortController()
@@ -69,7 +60,7 @@ export class NodeBackend {
 	private timer?: NodeJS.Timeout
 	private clock = new PlaybackClock()
 	private volumeText = new VolumeText()
-	private state: SetupState = 'disabled'
+	private state?: SetupState
 	private lastValues = ''
 	private activeRecord?: string
 	private appsGeneration = 0
@@ -161,12 +152,6 @@ export class NodeBackend {
 			this.secrets.personalOutput,
 		)
 		if (pairRequested || refreshRequested || secrets.pin !== undefined) this.save()
-		if (!config.enabled) {
-			const generation = this.generation + 1
-			await this.stop()
-			if (generation === this.generation) this.status('disabled', 'Disabled')
-			return
-		}
 		if (this.pending && this.pending.deviceId === this.config.deviceId && !pairRequested) {
 			if (this.pending.finishing) return
 			if (pin) {
