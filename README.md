@@ -173,13 +173,13 @@ credentials, device identifiers, addresses or raw captures; use invented values.
 3. Publish a GitHub release named `Apple TV X.Y.Z` with tag `vX.Y.Z` on that
    commit. Its notes are the release notes. The release workflow attaches the
    Companion package.
-4. Submit `vX.Y.Z` for review at https://developer.bitfocus.io/ and paste the
-   same release notes.
+4. Submit `vX.Y.Z` for review on the [Apple TV module page](https://developer.bitfocus.io/modules/companion-connection/manage/apple-tv)
+   and paste the same release notes.
 
 ## Provenance
 
 The project started with Bitfocus's TypeScript template. The module uses the
-MIT-licensed `node-appletv-remote` library with a small patch in
-`patches/`; package generation includes the bundled
-dependency license inventory. pyatv 0.18.0 was the independent protocol reference
-during development.
+MIT-licensed `node-appletv-remote` 0.5.0 with a [local patch](patches/node-appletv-remote-npm-0.5.0-5edebab564.patch)
+for pairing, frame handling, and personal audio routing. The [pairing signature fix](https://github.com/energee/node-appletv-remote/pull/127)
+merged upstream after 0.5.0. The package includes the bundled dependency license
+inventory. pyatv 0.18.0 was the independent protocol reference during development.
