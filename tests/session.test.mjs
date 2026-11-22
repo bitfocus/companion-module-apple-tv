@@ -193,17 +193,20 @@ test('playback and mute feedback update with the TV and clear when it disconnect
 	}
 })
 
-test('only new connections without a personal output name receive the default', async () => {
+test('new Companion connections receive the field default and existing names are preserved', async () => {
 	for (const scenario of [
 		{ first: true, name: undefined, expected: DEFAULT_PERSONAL_OUTPUT_NAME },
 		{ first: false, name: undefined, expected: undefined },
 		{ first: false, name: '', expected: '' },
 		{ first: false, name: 'Headphones', expected: 'Headphones' },
-		{ first: true, name: '', expected: '' },
 	]) {
 		const f = fixture()
 		try {
-			await f.module.init({ deviceId: '', personalOutputName: scenario.name }, scenario.first, {})
+			// Companion seeds the configuration from field defaults before the first init.
+			const name = scenario.first
+				? f.module.getConfigFields().find((field) => field.id === 'personalOutputName').default
+				: scenario.name
+			await f.module.init({ deviceId: '', personalOutputName: name }, scenario.first, {})
 			await nextTurn()
 			assert.equal(f.saves.at(-1).config.personalOutputName, scenario.expected)
 			assert.equal(f.pairs.length, 0)

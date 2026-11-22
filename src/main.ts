@@ -49,7 +49,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		super(internal)
 	}
 
-	async init(config: ModuleConfig, isFirstInit: boolean, secrets: ModuleSecrets = {}): Promise<void> {
+	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets = {}): Promise<void> {
 		UpdateVariableDefinitions(this)
 		this.setVariableValues({
 			...displayDefaults,
@@ -108,15 +108,12 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 			this.backendOptions,
 		)
 		UpdateFeedbacks(this)
-		this.applyConfig(config, secrets, isFirstInit)
+		await this.configUpdated(config, secrets)
 	}
 	getConfigFields(): SomeCompanionConfigField[] {
 		return GetConfigFields(this.backend?.devices, this.config.deviceId)
 	}
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets = {}): Promise<void> {
-		this.applyConfig(config, secrets)
-	}
-	private applyConfig(config: ModuleConfig, secrets: ModuleSecrets, isFirstInit = false): void {
 		this.config = config
 		const backend = this.backend
 		if (!backend) return
@@ -125,7 +122,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		const version = ++this.configurationVersion
 		// Companion's configuration IPC has a shorter deadline than discovery or PIN
 		// verification. Acknowledge Save now and publish progress through callbacks.
-		const task = backend.configure(config, secrets, isFirstInit).catch((error: unknown) => {
+		const task = backend.configure(config, secrets).catch((error: unknown) => {
 			if (this.backend !== backend || this.configurationVersion !== version) return
 			this.log('error', `Setup failed: ${error instanceof Error ? error.message : String(error)}`)
 			this.updateStatus(InstanceStatus.ConnectionFailure, 'Setup failed; disable the connection and try again')

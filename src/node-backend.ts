@@ -6,7 +6,7 @@ import { CompanionRequestRejected, PowerStateUnknown, UnsupportedCommand } from 
 import { decodePairing, encodePairing, type ModuleSecrets, type SavedPairing } from './node-credentials.js'
 import { displayDefaults, displayValues, VolumeText, type DisplayValues } from './display.js'
 import { PlaybackClock } from './playback.js'
-import { DEFAULT_PERSONAL_OUTPUT_NAME, type DeviceChoice, type ModuleConfig } from './config.js'
+import type { DeviceChoice, ModuleConfig } from './config.js'
 import { PersonalOutputRouter, type OutputLink, type PersonalRoute, type RouteTarget } from './personal-output.js'
 
 type Controller = Pick<
@@ -157,25 +157,23 @@ export class NodeBackend {
 		this.hooks.values({ last_result: devices.length ? 'Apple TV device list updated.' : NO_APPLE_TV_FOUND })
 		return devices
 	}
-	async configure(config: ModuleConfig, secrets: ModuleSecrets = {}, isFirstInit = false): Promise<void> {
+	async configure(config: ModuleConfig, secrets: ModuleSecrets = {}): Promise<void> {
 		const pairRequested = config.pair === true
 		const refreshRequested = config.refresh === true
 		const pin = typeof secrets.pin === 'string' ? secrets.pin.trim() : ''
-		const setDefaultOutput = isFirstInit && config.personalOutputName === undefined
 		this.config = {
 			...config,
 			deviceId: typeof config.deviceId === 'string' ? config.deviceId : '',
 			pair: false,
 			refresh: false,
 		}
-		if (setDefaultOutput) this.config.personalOutputName = DEFAULT_PERSONAL_OUTPUT_NAME
 		this.secrets = { ...secrets }
 		delete this.secrets.pin
 		this.router.configure(
 			{ match: this.config.personalOutputName, id: this.config.personalOutputId },
 			this.secrets.personalOutput,
 		)
-		if (setDefaultOutput || pairRequested || refreshRequested || secrets.pin !== undefined) this.save()
+		if (pairRequested || refreshRequested || secrets.pin !== undefined) this.save()
 		if (this.pending && this.pending.deviceId === this.config.deviceId && !pairRequested) {
 			if (this.pending.finishing) return
 			if (pin) {
