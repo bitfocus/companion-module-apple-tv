@@ -200,7 +200,11 @@ export class NodeBackend {
 			this.status('pairing', 'Requesting a PIN from the selected Apple TV')
 			try {
 				const matches = (await this.discover(signal)).filter((device) => device.deviceId === this.config.deviceId)
-				if (matches.length !== 1) throw new Error('Selected TV not uniquely discovered')
+				if (matches.length !== 1) {
+					// Use the pairing failure handler to clear state and notify the user.
+					// noinspection ExceptionCaughtLocallyJS
+					throw new Error('Selected TV not uniquely discovered')
+				}
 				signal.throwIfAborted()
 				const pair =
 					this.options.pairing?.(matches[0]) ??
@@ -240,7 +244,11 @@ export class NodeBackend {
 		}
 		try {
 			const saved = decodePairing(this.secrets.pairing)
-			if (saved.deviceId !== this.config.deviceId) throw new Error('Different TV')
+			if (saved.deviceId !== this.config.deviceId) {
+				// A pairing for another TV needs the same prompt as missing credentials.
+				// noinspection ExceptionCaughtLocallyJS
+				throw new Error('Different TV')
+			}
 			await this.connect(saved.deviceId, saved.credentials, generation)
 		} catch {
 			if (generation === this.generation) this.status('unpaired', 'Pair this Apple TV before connecting')

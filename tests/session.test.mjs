@@ -44,25 +44,38 @@ function fixture() {
 		_isInstanceContext: true,
 		id: 'synthetic-module',
 		label: 'Synthetic Apple TV',
-		setVariableDefinitions: (definitions) => {
-			f.definitions = definitions
-		},
-		setVariableValues: f.hooks.values,
-		setActionDefinitions: (actions) => {
-			f.actions = actions
-		},
-		updateStatus: (status, message) => f.states.push({ status, message }),
-		saveConfig: f.hooks.save,
-		setFeedbackDefinitions: (feedbacks) => {
-			f.feedbacks = feedbacks
-		},
-		setPresetDefinitions: (structure, presets) => {
-			f.presets = { structure, presets }
-		},
-		checkFeedbacks: (types) => {
-			f.feedbackChecks = [...(f.feedbackChecks ?? []), ...types]
-		},
 	}
+	// Capture the variable definitions registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setVariableDefinitions = (definitions) => {
+		f.definitions = definitions
+	}
+	context.setVariableValues = f.hooks.values
+	// Capture the action callbacks registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setActionDefinitions = (actions) => {
+		f.actions = actions
+	}
+	// Record the status updates Companion receives from the module.
+	// noinspection JSUnusedGlobalSymbols
+	context.updateStatus = (status, message) => f.states.push({ status, message })
+	context.saveConfig = f.hooks.save
+	// Capture the feedback definitions registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setFeedbackDefinitions = (feedbacks) => {
+		f.feedbacks = feedbacks
+	}
+	// Capture the presets registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setPresetDefinitions = (structure, presets) => {
+		f.presets = { structure, presets }
+	}
+	// Record the feedback checks Companion receives from the module.
+	// noinspection JSUnusedGlobalSymbols
+	context.checkFeedbacks = (types) => {
+		f.feedbackChecks = [...(f.feedbackChecks ?? []), ...types]
+	}
+
 	return { ...f, module: new AppleTV(context, f.options), context, source: f }
 }
 

@@ -1,12 +1,10 @@
 /** Offline check of packets recorded from an independent implementation. */
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { Message, MRPMessage } from 'node-appletv-remote'
 import { MetadataState } from '../dist/device/metadata.js'
+import fixtures from './fixtures/metadata-packets.json' with { type: 'json' }
 
-/** @type {{messages: Record<string, string>}} */
-const fixtures = JSON.parse(await readFile(new URL('./fixtures/metadata-packets.json', import.meta.url), 'utf8'))
 const decode = async (name) => MRPMessage.decode(Buffer.from(fixtures.messages[name], 'hex'))
 
 test('independently recorded packets read through the Node codec and metadata state', async () => {

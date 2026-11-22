@@ -614,11 +614,15 @@ test('backend toggles a learned personal output and keeps its identifier out of 
 
 		await backend.selectPersonalOutput('toggle')
 		await until(() => values.personal_output_route === 'Default')
+		// The metadata peer records settingDevices from the decoded route message.
+		// noinspection JSUnresolvedReference
 		assert.deepEqual(f.metadataPeers[0].routeRequests.at(-1).settingDevices, ['tv-output'])
 		assert.equal(backend.personalOutputActive, false)
 		await backend.selectPersonalOutput('toggle')
 		await until(() => values.personal_output_route === 'Personal')
 		assert.match(values.last_result, /personal output confirmed/)
+		// The decoded route message names the personal device by its learned ID.
+		// noinspection JSUnresolvedReference
 		assert.deepEqual(f.metadataPeers[0].routeRequests.at(-1).settingDevices, ['synthetic-airpods'])
 		assert.equal(f.metadataPeers[0].routeRequests.length, 2)
 		assert.ok(feedbackChecks >= 3)

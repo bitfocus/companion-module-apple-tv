@@ -158,6 +158,8 @@ export async function withCompanionSession<T>(
 		])
 		const remoteId = started.get('_sid')
 		if (typeof remoteId !== 'number' || !Number.isInteger(remoteId) || remoteId < 0 || remoteId > 0xffffffff) {
+			// The session failure path closes the authenticated connection.
+			// noinspection ExceptionCaughtLocallyJS
 			throw new Error('Invalid session identifier')
 		}
 		sessionId = (BigInt(remoteId) << 32n) | BigInt(localId)
@@ -166,7 +168,11 @@ export async function withCompanionSession<T>(
 			await companionRequest(client, 'TVRCSessionStart', [['ProtocolVersionKey', '1.2']])
 		} catch (error) {
 			// Older TVs may reject this optional power-query registration.
-			if (!(error instanceof CompanionRequestRejected)) throw error
+			if (!(error instanceof CompanionRequestRejected)) {
+				// Any other error must fail session startup and run cleanup.
+				// noinspection ExceptionCaughtLocallyJS
+				throw error
+			}
 		}
 		if (connection.sendMessage) {
 			commands.subscribe()

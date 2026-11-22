@@ -24,19 +24,36 @@ const context = {
 	_isInstanceContext: true,
 	id: 'packaged-smoke',
 	label: 'Packaged smoke',
-	setVariableDefinitions() {},
-	setVariableValues: (update) => Object.assign(values, update),
-	setActionDefinitions: (definitions) => {
-		actions = definitions
-	},
-	setFeedbackDefinitions: (definitions) => {
-		feedbacks = definitions
-	},
-	setPresetDefinitions() {},
-	checkFeedbacks() {},
-	updateStatus: (status, message) => states.push({ status, message }),
-	saveConfig: (config, secrets) => saves.push(structuredClone({ config, secrets })),
 }
+// Companion registers the bundled module's variables through the host context.
+// noinspection JSUnusedGlobalSymbols
+context.setVariableDefinitions = () => {}
+// Companion publishes the values that the smoke test reads.
+// noinspection JSUnusedGlobalSymbols
+context.setVariableValues = (update) => Object.assign(values, update)
+// Capture the action callbacks registered by the bundled module.
+// noinspection JSUnusedGlobalSymbols
+context.setActionDefinitions = (definitions) => {
+	actions = definitions
+}
+// Capture the feedback callbacks registered by the bundled module.
+// noinspection JSUnusedGlobalSymbols
+context.setFeedbackDefinitions = (definitions) => {
+	feedbacks = definitions
+}
+// Companion registers the bundled module's presets through the host context.
+// noinspection JSUnusedGlobalSymbols
+context.setPresetDefinitions = () => {}
+// The bundled module asks Companion to re-evaluate feedback through this callback.
+// noinspection JSUnusedGlobalSymbols
+context.checkFeedbacks = () => {}
+// Keep the status history for pairing diagnostics in this smoke test.
+// noinspection JSUnusedGlobalSymbols
+context.updateStatus = (status, message) => states.push({ status, message })
+// Companion persists pairing through this callback before the simulated restart.
+// noinspection JSUnusedGlobalSymbols
+context.saveConfig = (config, secrets) => saves.push(structuredClone({ config, secrets }))
+
 const options = {
 	discover: async () => [
 		{
