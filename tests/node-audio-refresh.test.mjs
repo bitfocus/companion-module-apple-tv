@@ -2,14 +2,16 @@ import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import { setTimeout as delay } from 'node:timers/promises'
 import test from 'node:test'
-import { MRPMessage } from 'node-appletv-remote'
+import { MessageType, MRPMessage } from 'node-appletv-remote'
 import { MetadataPeer } from './fixtures/metadata-peer.mjs'
 import { withMetadataSession } from '../dist/device/metadata-session.js'
 import { MetadataState } from '../dist/device/metadata.js'
 
 class ReadPeer extends MetadataPeer {
 	reads = []
-	async sendMRPMessageAndWait(data) {
+	async sendMRPMessageAndWait(data, responseType, timeoutMs) {
+		assert.equal(responseType, MessageType.GetVolumeResult)
+		assert.ok(Number.isFinite(timeoutMs) && timeoutMs > 0, 'Volume refresh needs a bounded wait')
 		const request = await MRPMessage.decode(data)
 		this.requests.push(request)
 		const pending = Promise.withResolvers()

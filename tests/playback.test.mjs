@@ -81,7 +81,7 @@ test('zero or unreported rate does not invent progress; valid non-unit rates sca
 	f.step(3000)
 	assert.equal(f.clock.value(), 16)
 })
-test('the metadata reducer retains explicit Cocoa timestamp and rate without treating defaults as observations', () => {
+function metadataWithTimedItem() {
 	const state = new MetadataState()
 	state.setConnected()
 	const path = { client: { bundleIdentifier: 'synthetic.app' }, player: { identifier: 'player' } }
@@ -100,6 +100,11 @@ test('the metadata reducer retains explicit Cocoa timestamp and rate without tre
 			},
 		},
 	})
+	return { state, path }
+}
+
+test('the metadata reducer retains explicit Cocoa timestamp and rate without treating defaults as observations', () => {
+	const { state, path } = metadataWithTimedItem()
 	assert.equal(state.snapshot().nowPlaying.positionTimestamp, 1778307200)
 	assert.equal(state.snapshot().nowPlaying.playbackRate, 1)
 	state.receive({
@@ -130,24 +135,7 @@ test('changing the selected player resets a matching item to its own report', ()
 })
 
 test('an elapsed-time update without a new timestamp cannot reuse the previous timestamp', () => {
-	const state = new MetadataState()
-	state.setConnected()
-	const path = { client: { bundleIdentifier: 'synthetic.app' }, player: { identifier: 'player' } }
-	state.receive({ type: 46, '.setNowPlayingClientMessage': { client: path.client } })
-	state.receive({ type: 47, '.setNowPlayingPlayerMessage': { playerPath: path } })
-	state.receive({
-		type: 4,
-		'.setStateMessage': {
-			playerPath: path,
-			playbackState: 1,
-			playbackQueue: {
-				location: 0,
-				contentItems: [
-					{ identifier: 'item', metadata: { elapsedTime: 12, elapsedTimeTimestamp: 800000000, playbackRate: 1 } },
-				],
-			},
-		},
-	})
+	const { state, path } = metadataWithTimedItem()
 	state.receive({
 		type: 56,
 		'.updateContentItemMessage': {

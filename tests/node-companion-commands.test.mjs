@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { opackEncode, opackDecode, CompanionSession, CompanionConnection, FrameType } from 'node-appletv-remote'
 import { CompanionCommands } from '../dist/device/companion.js'
 
+/** @param {Map<string, unknown> | Error} [reply] */
 function fixture(reply = new Map()) {
 	const requests = []
 	const commands = new CompanionCommands({
@@ -59,7 +60,7 @@ for (const seconds of [-30, -10, 10, 30]) {
 		const expected = Buffer.alloc(9)
 		expected[0] = 0x36 // Published OPACK float64 tag.
 		expected.writeDoubleLE(seconds, 1)
-		assert.ok(request.bytes.subarray(-9).equals(expected))
+		assert.deepEqual(request.bytes.subarray(-9), expected)
 		assert.equal(request.identifier, '_mcc')
 		assert.equal(request.envelope.get('_c').get('_mcc'), 7)
 		assert.equal(request.envelope.get('_c').get('_skpS'), seconds)
@@ -149,8 +150,12 @@ test('patched npm package interoperates with independently generated encrypted C
 	connection.session = new CompanionSession(key, key)
 	const states = []
 	connection.on('event', ({ data }) => states.push(data.get('_c').get('state')))
+	// Feed a partial frame directly to the parser without a socket.
+	// noinspection JSUnresolvedReference
 	connection.onData(frames[0].subarray(0, 17))
 	assert.deepEqual(states, [])
+	// Complete the partial frame and feed the next encrypted frame in the same read.
+	// noinspection JSUnresolvedReference
 	connection.onData(Buffer.concat([frames[0].subarray(17), frames[1]]))
 	assert.deepEqual(states, [3, 1])
 })
@@ -189,12 +194,15 @@ test('patched npm package drops an undecodable or empty frame and keeps the sess
 	const dated = peer.encrypt(FrameType.E_OPACK, Buffer.concat([Buffer.from('e1425f7406', 'hex'), Buffer.alloc(8)]))
 	// pyatv decrypts only non-empty frames, so an empty one consumes no receive nonce.
 	const empty = Buffer.from([0x01, 0, 0, 0])
+	// Feed the mixed capture directly to the parser without a socket.
+	// noinspection JSUnresolvedReference
 	connection.onData(Buffer.concat([first, dated, empty, status(1)]))
 	assert.deepEqual(errors, [])
 	assert.deepEqual(states, [3, 1])
 	assert.equal(dropped.length, 1)
 	assert.match(dropped[0], /^Companion frame type 8 \(13 bytes\) dropped: OPACK: unknown tag 0x6/)
 	// A frame that fails authentication still ends the connection.
+	// noinspection JSUnresolvedReference
 	connection.onData(Buffer.concat([Buffer.from([FrameType.E_OPACK, 0, 0, 20]), Buffer.alloc(20, 9)]))
 	assert.equal(errors.length, 1)
 })

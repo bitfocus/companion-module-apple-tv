@@ -1,4 +1,6 @@
 import type { SomeCompanionConfigField } from '@companion-module/base'
+export const DEFAULT_PERSONAL_OUTPUT_NAME = 'AirPods'
+
 export type ModuleConfig = {
 	deviceId: string
 	pair?: boolean
@@ -29,10 +31,9 @@ export function GetConfigFields(devices: DeviceChoice[] = [], selected = ''): So
 			type: 'textinput',
 			id: 'personalOutputName',
 			label: 'Personal output name contains',
-			default: '',
+			default: DEFAULT_PERSONAL_OUTPUT_NAME,
 			width: 6,
-			description:
-				'For example AirPods. Leave empty to disable personal output selection. Matching is case-insensitive; the output must appear once in the TV output list, for example by selecting it once on the TV.',
+			description: `New connections start with ${DEFAULT_PERSONAL_OUTPUT_NAME}. Clear the name to turn off name matching. Matching ignores case and needs one match in the TV output list.`,
 		},
 		{
 			type: 'textinput',

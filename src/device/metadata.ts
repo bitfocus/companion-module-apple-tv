@@ -4,10 +4,13 @@ type Player = { state?: number; items: Fields[]; location: number }
 type Output = { id: string; name: string }
 export type AudioRead = { generation: number; outputId: string }
 
+const reportedPlaybackStates = ['Unknown', 'Playing', 'Paused', 'Stopped', 'Interrupted', 'Seeking'] as const
+export const playbackStates = [...reportedPlaybackStates, 'Idle'] as const
+
 export type MetadataSnapshot = {
 	connected: boolean
 	nowPlaying: {
-		state: 'Unknown' | 'Idle' | 'Playing' | 'Paused' | 'Stopped' | 'Interrupted' | 'Seeking'
+		state: (typeof playbackStates)[number]
 		app?: string
 		title?: string
 		artist?: string
@@ -262,16 +265,10 @@ export class MetadataState {
 		const player = selected ? client?.players.get(selected) : undefined
 		if (!player) return result
 		const metadata = fields(player.items[player.location]?.metadata)
-		const states: MetadataSnapshot['nowPlaying']['state'][] = [
-			'Unknown',
-			'Playing',
-			'Paused',
-			'Stopped',
-			'Interrupted',
-			'Seeking',
-		]
 		result.nowPlaying.state =
-			player.state === undefined || (player.state === 2 && !metadata) ? 'Idle' : (states[player.state] ?? 'Unknown')
+			player.state === undefined || (player.state === 2 && !metadata)
+				? 'Idle'
+				: (reportedPlaybackStates[player.state] ?? 'Unknown')
 		result.nowPlaying.title = text(own(metadata, 'title'))
 		result.nowPlaying.artist = text(own(metadata, 'trackArtistName'))
 		result.nowPlaying.album = text(own(metadata, 'albumName'))

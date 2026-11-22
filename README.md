@@ -25,8 +25,10 @@ after an explicit pairing request; reconnects never start pairing automatically.
 
 The PIN clears after submission. The module waits up to three minutes, but the
 TV can close its session earlier. Companion reports that closure immediately.
-If pairing fails or expires, explicitly start a
-new attempt. Previous saved keys are retained until a replacement verifies.
+If a new PIN attempt fails or expires, Companion reconnects using the saved
+pairing for that TV, if available. Companion keeps the saved keys until a
+replacement verifies. To request another PIN, check **Start pairing when
+saving** and Save.
 Disabling the connection in Companion cancels a pending attempt. Failed pairing can leave a
 controller registration on the TV; remove only the abandoned registration from
 tvOS when retiring it.
@@ -66,7 +68,8 @@ after connecting.
 
 Variables include connection, title, artist, app, playback state, elapsed and
 remaining time, progress, volume, mute-save state, power, personal output route
-and name, and `last_result`.
+and name, and `last_result`. Use **Playback state is** and **Muted by Companion**
+feedback to style buttons based on the current state.
 Elapsed time advances from the selected player's reported position, timestamp
 and playback rate; it freezes on pause and clears on connection loss. Streams
 without a duration have no invented remaining time. Metadata availability depends
@@ -76,12 +79,12 @@ delivery, never physical confirmation.
 ## Personal audio output
 
 The **Personal audio output** action selects a personal output, such as
-same-account AirPods, as the TV's system audio route. Enable it by setting
-**Personal output name contains** (for example `AirPods`); an empty value
-disables it. The TV must report the AirPods once, for example after selecting
-them from its Control Center. The module then remembers their output UID in the
-connection secrets, not the public configuration. If several reported outputs
-match, nothing is learned. **Personal output identifier** overrides the match.
+same-account AirPods, as the TV's system audio route. New connections start
+with **Personal output name contains** set to `AirPods`. Clear the name to turn
+off name matching. The TV must report the AirPods once, for example after
+selecting them from its Control Center. The module then remembers their output
+UID in the connection secrets. With several matches, the route is unavailable.
+**Personal output identifier** overrides the name match.
 
 | Item                                               | ID                      | Values                                                       |
 | -------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |
@@ -170,13 +173,13 @@ credentials, device identifiers, addresses or raw captures; use invented values.
 3. Publish a GitHub release named `Apple TV X.Y.Z` with tag `vX.Y.Z` on that
    commit. Its notes are the release notes. The release workflow attaches the
    Companion package.
-4. Submit `vX.Y.Z` for review at https://developer.bitfocus.io/ and paste the
-   same release notes.
+4. Submit `vX.Y.Z` for review on the [Apple TV module page](https://developer.bitfocus.io/modules/companion-connection/manage/apple-tv)
+   and paste the same release notes.
 
 ## Provenance
 
 The project started with Bitfocus's TypeScript template. The module uses the
-MIT-licensed `node-appletv-remote` library with a small patch in
-`patches/`; package generation includes the bundled
-dependency license inventory. pyatv 0.18.0 was the independent protocol reference
-during development.
+MIT-licensed `node-appletv-remote` 0.5.0 with a [local patch](patches/node-appletv-remote-npm-0.5.0-5edebab564.patch)
+for pairing, frame handling, and personal audio routing. The [pairing signature fix](https://github.com/energee/node-appletv-remote/pull/127)
+merged upstream after 0.5.0. The package includes the bundled dependency license
+inventory. pyatv 0.18.0 was the independent protocol reference during development.

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import AppleTV from '../dist/main.js'
 import { remoteActions } from '../dist/actions.js'
+import { DEFAULT_PERSONAL_OUTPUT_NAME } from '../dist/config.js'
 import { config, saved, nextTurn, setupFixture } from './fixtures/node-setup-peer.mjs'
 
 test('completed discovery notifies an open Companion editor with the new choices', async () => {
@@ -44,25 +45,38 @@ function fixture() {
 		_isInstanceContext: true,
 		id: 'synthetic-module',
 		label: 'Synthetic Apple TV',
-		setVariableDefinitions: (definitions) => {
-			f.definitions = definitions
-		},
-		setVariableValues: f.hooks.values,
-		setActionDefinitions: (actions) => {
-			f.actions = actions
-		},
-		updateStatus: (status, message) => f.states.push({ status, message }),
-		saveConfig: f.hooks.save,
-		setFeedbackDefinitions: (feedbacks) => {
-			f.feedbacks = feedbacks
-		},
-		setPresetDefinitions: (structure, presets) => {
-			f.presets = { structure, presets }
-		},
-		checkFeedbacks: (types) => {
-			f.feedbackChecks = [...(f.feedbackChecks ?? []), ...types]
-		},
 	}
+	// Capture the variable definitions registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setVariableDefinitions = (definitions) => {
+		f.definitions = definitions
+	}
+	context.setVariableValues = f.hooks.values
+	// Capture the action callbacks registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setActionDefinitions = (actions) => {
+		f.actions = actions
+	}
+	// Record the status updates Companion receives from the module.
+	// noinspection JSUnusedGlobalSymbols
+	context.updateStatus = (status, message) => f.states.push({ status, message })
+	context.saveConfig = f.hooks.save
+	// Capture the feedback definitions registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setFeedbackDefinitions = (feedbacks) => {
+		f.feedbacks = feedbacks
+	}
+	// Capture the presets registered through Companion's host context.
+	// noinspection JSUnusedGlobalSymbols
+	context.setPresetDefinitions = (structure, presets) => {
+		f.presets = { structure, presets }
+	}
+	// Record the feedback checks Companion receives from the module.
+	// noinspection JSUnusedGlobalSymbols
+	context.checkFeedbacks = (types) => {
+		f.feedbackChecks = [...(f.feedbackChecks ?? []), ...types]
+	}
+
 	return { ...f, module: new AppleTV(context, f.options), context, source: f }
 }
 
@@ -112,7 +126,7 @@ test('Companion entrypoint restores saved pairing with an old checkbox value and
 		for (const preset of Object.values(presets))
 			for (const action of preset.steps[0].down)
 				if (action.actionId === 'command') assert.ok(Object.hasOwn(remoteActions, action.options.command))
-		assert.equal(presets.wake.steps[0].down[0].options.command, 'wake')
+		assert.deepEqual(presets.wake.steps[0].down[0], { actionId: 'command', options: { command: 'wake' } })
 		assert.match(presets.power_state.style.text, /\$\(Synthetic Apple TV:power\)/)
 		assert.equal(f.values.title, 'Synthetic title')
 		assert.equal(f.pairs.length, 0)
@@ -145,6 +159,61 @@ test('personal output action, variables and feedback stay Unavailable without ro
 		assert.ok(f.module.getConfigFields().some((field) => field.id === 'personalOutputId'))
 	} finally {
 		await f.module.destroy()
+	}
+})
+
+test('playback and mute feedback update with the TV and clear when it disconnects', async () => {
+	const f = fixture()
+	try {
+		await f.module.init(config, false, saved())
+		await nextTurn()
+		const { playbackState, muted } = f.source.feedbacks
+		const controller = f.controllers[0]
+		assert.equal(playbackState.callback({ options: { state: 'Playing' } }), true)
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), false)
+		assert.equal(muted.callback(), false)
+
+		f.source.feedbackChecks = []
+		controller.nowPlaying.state = 'Paused'
+		controller.feedback.mute = 'Muted'
+		controller.changed()
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), true)
+		assert.equal(muted.callback(), true)
+		assert.deepEqual(f.source.feedbackChecks.sort(), ['muted', 'playbackState'])
+
+		f.source.feedbackChecks = []
+		controller.state = 'reconnecting'
+		controller.changed()
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), false)
+		assert.equal(playbackState.callback({ options: { state: 'Unknown' } }), false)
+		assert.equal(muted.callback(), false)
+		assert.deepEqual(f.source.feedbackChecks.sort(), ['muted', 'playbackState', 'powerOn'])
+	} finally {
+		await f.module.destroy()
+	}
+})
+
+test('new Companion connections receive the field default and existing names are preserved', async () => {
+	for (const scenario of [
+		{ first: true, name: undefined, expected: DEFAULT_PERSONAL_OUTPUT_NAME },
+		{ first: false, name: undefined, expected: undefined },
+		{ first: false, name: '', expected: '' },
+		{ first: false, name: 'Headphones', expected: 'Headphones' },
+	]) {
+		const f = fixture()
+		try {
+			// Companion seeds the configuration from field defaults before the first init.
+			const name = scenario.first
+				? f.module.getConfigFields().find((field) => field.id === 'personalOutputName').default
+				: scenario.name
+			await f.module.init({ deviceId: '', personalOutputName: name }, scenario.first, {})
+			await nextTurn()
+			assert.equal(f.saves.at(-1).config.personalOutputName, scenario.expected)
+			assert.equal(f.pairs.length, 0)
+			assert.equal(f.controllers.length, 0)
+		} finally {
+			await f.module.destroy()
+		}
 	}
 })
 

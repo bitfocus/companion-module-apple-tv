@@ -37,6 +37,8 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 	backend?: NodeBackend
 	apps: { id: string; name: string }[] = []
 	power = 'Unknown'
+	playbackState?: string
+	muted = false
 	private configurationTasks = new Set<Promise<void>>()
 	private configurationVersion = 0
 	private destroyed = false
@@ -80,6 +82,20 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 					if (values.power !== undefined && values.power !== this.power) {
 						this.power = values.power
 						this.checkFeedbacks('powerOn')
+					}
+					if (values.playback_state !== undefined) {
+						const state = values.metadata_state === 'Connected' ? values.playback_state : undefined
+						if (state !== this.playbackState) {
+							this.playbackState = state
+							this.checkFeedbacks('playbackState')
+						}
+					}
+					if (values.mute_state !== undefined) {
+						const muted = values.mute_state === 'Muted'
+						if (muted !== this.muted) {
+							this.muted = muted
+							this.checkFeedbacks('muted')
+						}
 					}
 				},
 				log: (level, message) => this.log(level, message),

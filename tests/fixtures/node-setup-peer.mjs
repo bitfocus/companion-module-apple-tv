@@ -99,7 +99,7 @@ export function setupFixture(overrides = {}) {
 				},
 				destroy() {
 					this.destroys++
-					closure.resolve()
+					closure.resolve(undefined)
 				},
 			}
 			pairs.push(pair)

@@ -23,7 +23,7 @@ const displayNames: Record<keyof DisplayValues, string> = {
 export function UpdateVariableDefinitions(self: AppleTV): void {
 	self.setVariableDefinitions({
 		connection: { name: 'Connection state (such as ready, connecting, reconnecting or error)' },
-		last_result: { name: 'Last dispatch result (not physical confirmation)' },
+		last_result: { name: 'Last command or setup result' },
 		personal_output_route: {
 			name: 'Personal audio output route (Personal, Default, Connecting, Failed or Unavailable)',
 		},

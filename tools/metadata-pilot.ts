@@ -41,7 +41,11 @@ export async function observeMetadata(
 			signal,
 		)
 		const matches = devices.filter((device) => device.deviceId === saved.deviceId && device.model.startsWith('AppleTV'))
-		if (matches.length !== 1) throw new Error('Metadata connection failed: selected TV not uniquely discovered')
+		if (matches.length !== 1) {
+			// Use the observation failure path so cancellation and timeout retain their messages.
+			// noinspection ExceptionCaughtLocallyJS
+			throw new Error('Metadata connection failed: selected TV not uniquely discovered')
+		}
 		await withMetadataSession(
 			matches[0],
 			saved.credentials,

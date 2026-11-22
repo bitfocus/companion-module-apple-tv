@@ -29,6 +29,8 @@ export class Peer extends EventEmitter {
 	closed = false
 	onRequest = undefined
 	async connect() {}
+	// The session calls this method through the injected connection.
+	// noinspection JSUnusedGlobalSymbols
 	async sendRequest(id, envelope) {
 		const content = envelope.get('_c')
 		this.requests.push({ id, content })
@@ -40,6 +42,8 @@ export class Peer extends EventEmitter {
 		if (id === '_mcc' && content.get('_mcc') === 6) this.metadata.volume(content.get('_vol').value * 100)
 		return reply()
 	}
+	// The session sends events through the injected connection.
+	// noinspection JSUnusedGlobalSymbols
 	sendMessage(id, envelope) {
 		this.events.push({ id, content: envelope.get('_c') })
 	}

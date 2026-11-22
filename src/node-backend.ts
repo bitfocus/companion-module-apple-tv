@@ -1,6 +1,6 @@
 import { CompanionPairSetup, scan, type DiscoveredDevice, type HAPCredentials } from 'node-appletv-remote'
 import { NodeController, SeekCancelled, type ControllerLog, type RemoteAction } from './device/controller.js'
-import { bounded } from './device/session.js'
+import { bounded, COMPANION_NAME, OperationTimedOut } from './device/session.js'
 import { CommandNotSent } from './device/queue.js'
 import { CompanionRequestRejected, PowerStateUnknown, UnsupportedCommand } from './device/companion.js'
 import { decodePairing, encodePairing, type ModuleSecrets, type SavedPairing } from './node-credentials.js'
@@ -15,8 +15,8 @@ type Controller = Pick<
 > &
 	Partial<Pick<NodeController, 'audioOutputs' | 'routeAudio' | 'audioOutputIdentity' | 'audioRevision'>>
 type Pairing = Pick<CompanionPairSetup, 'start' | 'finish' | 'destroy' | 'closed' | 'stage'>
-/** How the TV lists this pairing under Remote App and Devices; without it the TV shows Unknown. */
-const PAIRING_NAME = 'Companion'
+const NO_APPLE_TV_FOUND = 'No Apple TV found. Check the network, then refresh the device list.'
+const DISCOVERY_FAILED = 'Could not search for Apple TVs. Check the network, then refresh the device list.'
 export type SetupState =
 	'unpaired' | 'discovering' | 'pairing' | 'pin' | 'verifying' | 'connecting' | 'ready' | 'reconnecting' | 'error'
 export type PersonalOutputValues = { personal_output_route: PersonalRoute; personal_output_name: string }
@@ -118,10 +118,31 @@ export class NodeBackend {
 		this.hooks.save({ ...this.config, pair: false, refresh: false }, { ...this.secrets })
 	}
 	private async discover(signal: AbortSignal): Promise<DiscoveredDevice[]> {
-		const devices = (
-			await bounded(async () => (this.options.discover ?? scan)({ timeout: 5000, signal }), 7000, signal)
-		).filter((device) => device.model.startsWith('AppleTV') && device.deviceId && device.companionPort && device.port)
-		if (signal.aborted) throw new Error('Discovery cancelled')
+		let discovered: DiscoveredDevice[]
+		try {
+			discovered = await bounded(async () => (this.options.discover ?? scan)({ timeout: 5000, signal }), 7000, signal)
+		} catch (error) {
+			if (!signal.aborted) {
+				this.hooks.log?.(
+					'warn',
+					error instanceof OperationTimedOut ? 'Apple TV discovery scan timed out.' : 'Apple TV discovery scan failed.',
+				)
+				this.hooks.values({ last_result: DISCOVERY_FAILED })
+			}
+			throw error
+		}
+		signal.throwIfAborted()
+		const devices = discovered.filter(
+			(device) => device.model.startsWith('AppleTV') && device.deviceId && device.companionPort && device.port,
+		)
+		if (!devices.length) {
+			this.hooks.log?.(
+				'info',
+				discovered.length
+					? 'No discovered device provided the required Apple TV services and identifier.'
+					: 'No devices responded to the Apple TV discovery scan.',
+			)
+		}
 		this.devices = [
 			...new Map(
 				devices.map((device) => [
@@ -133,6 +154,7 @@ export class NodeBackend {
 		// Companion reloads configuration fields on a saved-config notification.
 		// Notify after discovery, not only when consuming the Refresh checkbox.
 		this.save()
+		this.hooks.values({ last_result: devices.length ? 'Apple TV device list updated.' : NO_APPLE_TV_FOUND })
 		return devices
 	}
 	async configure(config: ModuleConfig, secrets: ModuleSecrets = {}): Promise<void> {
@@ -171,15 +193,7 @@ export class NodeBackend {
 			this.activeRecord === JSON.stringify(this.secrets.pairing) &&
 			this.secrets.pairing?.deviceId === this.config.deviceId
 		) {
-			if (refreshRequested) {
-				const generation = this.generation
-				try {
-					await this.discover(this.abort.signal)
-				} catch {
-					if (generation === this.generation)
-						this.hooks.values({ last_result: 'Device discovery failed; connection retained' })
-				}
-			}
+			if (refreshRequested) await this.discover(this.abort.signal).catch(() => undefined)
 			return
 		}
 		const generation = this.generation + 1
@@ -188,45 +202,53 @@ export class NodeBackend {
 		const signal = this.abort.signal
 		if (!this.config.deviceId) {
 			this.status('discovering', 'Looking for Apple TVs')
-			try {
-				await this.discover(signal)
-			} catch {
-				/* Selection remains empty and no pairing starts. */
-			}
-			if (generation === this.generation) this.status('unpaired', 'Select an Apple TV, check Start pairing, then Save')
+			const devices = await this.discover(signal).catch(() => undefined)
+			if (generation === this.generation)
+				this.status(
+					'unpaired',
+					devices === undefined
+						? DISCOVERY_FAILED
+						: devices.length
+							? 'Select an Apple TV, check Start pairing, then Save'
+							: NO_APPLE_TV_FOUND,
+				)
 			return
 		}
 		if (pairRequested) {
 			this.status('pairing', 'Requesting a PIN from the selected Apple TV')
 			try {
-				const matches = (await this.discover(signal)).filter((device) => device.deviceId === this.config.deviceId)
-				if (matches.length !== 1) throw new Error('Selected TV not uniquely discovered')
+				const devices = await this.discover(signal)
+				const matches = devices.filter((device) => device.deviceId === this.config.deviceId)
+				if (matches.length !== 1) {
+					this.pairingFailed(
+						generation,
+						devices.length ? 'Could not uniquely find the selected Apple TV.' : NO_APPLE_TV_FOUND,
+					)
+					return
+				}
 				signal.throwIfAborted()
 				const pair =
 					this.options.pairing?.(matches[0]) ??
-					new CompanionPairSetup(matches[0].address, matches[0].companionPort!, { name: PAIRING_NAME })
-				const pending: PendingPair = { deviceId: this.config.deviceId, pair, abort: this.abort, finishing: false }
+					new CompanionPairSetup(matches[0].address, matches[0].companionPort!, { name: COMPANION_NAME })
+				const pending: PendingPair = {
+					deviceId: this.config.deviceId,
+					pair,
+					abort: new AbortController(),
+					finishing: false,
+				}
 				this.pending = pending
-				// Cancellation reaches the attempt through clearPairing(), which destroys it.
-				await bounded(async () => pair.start(), 15000, signal)
+				await bounded(async () => pair.start(), 15000, pending.abort.signal)
 				if (generation !== this.generation) return
 				void pair.closed.then(() => {
-					if (this.pending !== pending || pending.finishing || generation !== this.generation) return
-					this.clearPairing()
-					this.status('error', 'Apple TV closed the pairing session. Start pairing again to request a new PIN')
+					if (this.pending !== pending || pending.finishing) return
+					this.pairingFailed(generation, 'Apple TV closed the pairing session.')
 				})
 				pending.timer = setTimeout(() => {
-					if (this.pending !== pending) return
-					pending.abort.abort()
-					pending.pair.destroy()
-					this.pending = undefined
-					this.status('error', 'Pairing expired. Check Start pairing and Save to try again')
+					if (this.pending === pending) this.pairingFailed(generation, 'Pairing expired.')
 				}, this.options.pinTimeoutMs ?? 180000)
 				this.status('pin', 'Enter the PIN shown on Apple TV and Save')
 			} catch {
-				if (generation !== this.generation) return
-				this.clearPairing()
-				this.status('error', 'Could not start pairing. Check the TV and network, then choose Start pairing again')
+				this.pairingFailed(generation, 'Could not start pairing. Check the TV and network.')
 			}
 			return
 		}
@@ -238,19 +260,26 @@ export class NodeBackend {
 			}
 			if (generation !== this.generation) return
 		}
-		try {
-			const saved = decodePairing(this.secrets.pairing)
-			if (saved.deviceId !== this.config.deviceId) throw new Error('Different TV')
-			await this.connect(saved.deviceId, saved.credentials, generation)
-		} catch {
-			if (generation === this.generation) this.status('unpaired', 'Pair this Apple TV before connecting')
-		}
+		if (!this.connectSavedPairing()) this.status('unpaired', 'Pair this Apple TV before connecting')
 	}
 	private clearPairing(): void {
-		if (!this.pending) return
-		clearTimeout(this.pending.timer)
-		this.pending.pair.destroy()
+		const pending = this.pending
+		if (!pending) return
 		this.pending = undefined
+		clearTimeout(pending.timer)
+		pending.abort.abort()
+		pending.pair.destroy()
+	}
+	private pairingFailed(generation: number, message: string): void {
+		if (generation !== this.generation) return
+		this.clearPairing()
+		if (this.connectSavedPairing()) {
+			const recovery = `${message} Reconnecting with the saved pairing.`
+			this.hooks.values({ last_result: recovery })
+			this.hooks.log?.('warn', recovery)
+		} else {
+			this.status('error', `${message} Start pairing again to request a new PIN.`)
+		}
 	}
 	private async finishPairing(pin: string): Promise<void> {
 		const pending = this.pending!
@@ -265,6 +294,7 @@ export class NodeBackend {
 		this.status('verifying', 'Verifying the new pairing')
 		let candidate: Controller | undefined
 		let verifyingConnection = false
+		let failure: string | undefined
 		try {
 			const credentials = await bounded(async () => pending.pair.finish(pin), 15000, pending.abort.signal)
 			pending.abort.signal.throwIfAborted()
@@ -281,21 +311,19 @@ export class NodeBackend {
 			this.attach(candidate, pairing)
 			candidate = undefined
 		} catch {
-			if (generation === this.generation) {
-				this.secrets = previousSecrets
-				this.clearPairing()
-				const failure = verifyingConnection
-					? 'The PIN exchange completed, but the new connection could not be verified.'
-					: pending.pair.stage === 'identity'
-						? 'Apple TV identity verification failed.'
-						: pending.pair.stage === 'proof'
-							? 'The PIN could not be verified with Apple TV.'
-							: 'The pairing session closed before the PIN could be verified.'
-				this.status('error', `${failure} Previous credentials were kept. Start pairing again to retry`)
-			}
+			if (generation !== this.generation) return
+			this.secrets = previousSecrets
+			failure = verifyingConnection
+				? 'The PIN exchange completed, but the new connection could not be verified.'
+				: pending.pair.stage === 'identity'
+					? 'Apple TV identity verification failed.'
+					: pending.pair.stage === 'proof'
+						? 'The PIN could not be verified with Apple TV.'
+						: 'The pairing session closed before the PIN could be verified.'
 		} finally {
 			await candidate?.stop()
 		}
+		if (failure) this.pairingFailed(generation, failure)
 	}
 	private makeController(deviceId: string, credentials: HAPCredentials): Controller {
 		return (
@@ -303,11 +331,18 @@ export class NodeBackend {
 			new NodeController(deviceId, credentials, { log: (level, message) => this.hooks.log?.(level, message) })
 		)
 	}
-	private async connect(deviceId: string, credentials: HAPCredentials, generation: number): Promise<void> {
-		if (generation !== this.generation) return
-		const controller = this.makeController(deviceId, credentials)
-		this.attach(controller, this.secrets.pairing!)
-		controller.start()
+	private connectSavedPairing(): boolean {
+		const pairing = this.secrets.pairing
+		if (!pairing || pairing.deviceId !== this.config.deviceId) return false
+		try {
+			const { deviceId, credentials } = decodePairing(pairing)
+			const controller = this.makeController(deviceId, credentials)
+			this.attach(controller, pairing)
+			controller.start()
+			return true
+		} catch {
+			return false
+		}
 	}
 	private attach(controller: Controller, pairing: SavedPairing): void {
 		this.controller = controller
