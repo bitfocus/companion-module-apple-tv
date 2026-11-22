@@ -112,7 +112,7 @@ test('Companion entrypoint restores saved pairing with an old checkbox value and
 		for (const preset of Object.values(presets))
 			for (const action of preset.steps[0].down)
 				if (action.actionId === 'command') assert.ok(Object.hasOwn(remoteActions, action.options.command))
-		assert.equal(presets.wake.steps[0].down[0].options.command, 'wake')
+		assert.deepEqual(presets.wake.steps[0].down[0], { actionId: 'command', options: { command: 'wake' } })
 		assert.match(presets.power_state.style.text, /\$\(Synthetic Apple TV:power\)/)
 		assert.equal(f.values.title, 'Synthetic title')
 		assert.equal(f.pairs.length, 0)

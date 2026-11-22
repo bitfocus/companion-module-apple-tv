@@ -298,7 +298,7 @@ test('commands dispatch once and show bounded error messages without leaking pro
 			assert.equal(f.values.last_result.includes('private'), false)
 			results.push(f.values.last_result)
 		}
-		// Each outcome, including seeks that cancelled out, reads differently.
+		// Each outcome, including seeks that cancel out, reads differently.
 		assert.equal(new Set(results).size, results.length)
 	} finally {
 		await f.backend.stop()

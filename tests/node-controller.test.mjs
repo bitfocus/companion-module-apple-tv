@@ -10,6 +10,16 @@ import { runAcceptance } from '../dist-tools/tools/acceptance.js'
 import { remoteActions } from '../dist/actions.js'
 import { SeekCancelled } from '../dist/device/controller.js'
 
+function holdSelectPress(peer, released) {
+	peer.onRequest = async (id, content) => {
+		if (id === '_hidC' && content.get('_hBtS') === 1) await released
+	}
+}
+
+function volumeWrites(peer) {
+	return peer.requests.filter(({ id }) => id === '_mcc').map(({ content }) => content.get('_vol').value)
+}
+
 test('controller accepts input only after a real health round trip and keeps gestures atomic', async () => {
 	const { controller, peers } = fixture()
 	await assert.rejects(controller.perform({ kind: 'button', button: 'select' }), CommandNotSent)
@@ -104,13 +114,11 @@ test('local validation and unsupported features do not reconnect a healthy sessi
 
 test('health checks do not interleave with an active button gesture', async () => {
 	const { controller, peers } = fixture({ healthIntervalMs: 5 })
+	const held = Promise.withResolvers()
 	controller.start()
 	try {
 		await controller.waitUntilReady(2000)
-		const held = Promise.withResolvers()
-		peers[0].onRequest = async (id, content) => {
-			if (id === '_hidC' && content.get('_hBtS') === 1) await held.promise
-		}
+		holdSelectPress(peers[0], held.promise)
 		const pending = controller.perform({ kind: 'button', button: 'select' })
 		await until(() => peers[0].requests.some(({ id }) => id === '_hidC'))
 		const before = peers[0].requests.length
@@ -127,6 +135,7 @@ test('health checks do not interleave with an active button gesture', async () =
 			],
 		)
 	} finally {
+		held.resolve(undefined)
 		await controller.stop()
 	}
 })
@@ -182,14 +191,12 @@ test('stopping an idle session closes both connections without a Companion volum
 
 test('status queries share the gesture queue and reject offline calls', async () => {
 	const { controller, peers } = fixture()
+	const held = Promise.withResolvers()
 	await assert.rejects(controller.queryPower(), CommandNotSent)
 	controller.start()
 	try {
 		await controller.waitUntilReady(2000)
-		const held = Promise.withResolvers()
-		peers[0].onRequest = async (id, content) => {
-			if (id === '_hidC' && content.get('_hBtS') === 1) await held.promise
-		}
+		holdSelectPress(peers[0], held.promise)
 		const gesture = controller.perform({ kind: 'button', button: 'select' })
 		await until(() => peers[0].requests.some(({ id }) => id === '_hidC'))
 		const query = controller.queryVolume()
@@ -209,6 +216,7 @@ test('status queries share the gesture queue and reject offline calls', async ()
 			['FetchAttentionState'],
 		)
 	} finally {
+		held.resolve(undefined)
 		await controller.stop()
 	}
 })
@@ -230,11 +238,15 @@ test('the sleep command sends one sleep key without a power query or Home', asyn
 	}
 })
 
-for (const source of ['control', 'volume', 'health']) {
+for (const [source, action] of Object.entries({
+	control: { kind: 'button', button: 'select' },
+	volume: { kind: 'volume', percent: 25 },
+	health: undefined,
+})) {
 	test(`a ${source} timeout invalidates pending input before the queue advances`, async () => {
 		const { controller, peers } = fixture({ healthIntervalMs: source === 'health' ? 5 : 30000 })
-		const started = Promise.withResolvers()
 		const gate = Promise.withResolvers()
+		let started = false
 		controller.start()
 		try {
 			await controller.waitUntilReady(2000)
@@ -246,21 +258,17 @@ for (const source of ['control', 'volume', 'health']) {
 							? id === '_mcc'
 							: id === 'FetchLaunchableApplicationsEvent'
 				if (target) {
-					started.resolve(undefined)
+					started = true
 					await gate.promise
 					throw new Error('Synthetic response timeout')
 				}
 			}
-			const failed =
-				source === 'control'
-					? assert.rejects(controller.perform({ kind: 'button', button: 'select' }), /Synthetic response timeout/)
-					: source === 'volume'
-						? assert.rejects(controller.perform({ kind: 'volume', percent: 25 }), /Synthetic response timeout/)
-						: Promise.resolve()
-			await started.promise
-			const queued = assert.rejects(controller.perform({ kind: 'button', button: 'right' }), CommandNotSent)
+			const failures = []
+			if (action) failures.push(assert.rejects(controller.perform(action), /Synthetic response timeout/))
+			await until(() => started)
+			failures.push(assert.rejects(controller.perform({ kind: 'button', button: 'right' }), CommandNotSent))
 			gate.resolve(undefined)
-			await Promise.all([failed, queued])
+			await Promise.all(failures)
 			assert.equal(
 				peers[0].requests.filter(({ id, content }) => id === '_hidC' && content.get('_hidC') === 4).length,
 				0,
@@ -300,9 +308,7 @@ test('a queued absolute-volume command cannot cross a same-ID output-list change
 	controller.start()
 	try {
 		await controller.waitUntilReady(2000)
-		peers[0].onRequest = async (id, content) => {
-			if (id === '_hidC' && content.get('_hBtS') === 1) await held.promise
-		}
+		holdSelectPress(peers[0], held.promise)
 		const first = controller.perform({ kind: 'button', button: 'select' })
 		await until(() => peers[0].requests.some(({ id }) => id === '_hidC'))
 		const volume = assert.rejects(controller.perform({ kind: 'volume', percent: 25 }), /output changed while/)
@@ -380,10 +386,7 @@ test('output pilot observes a slow round trip and sends only the initial mute', 
 		assert.equal(events.at(-1).clearedBeforeOutputChange, false)
 		await until(() => controller.feedback.volume === 0)
 		await assert.rejects(controller.perform({ kind: 'mute' }), /No saved volume/)
-		assert.deepEqual(
-			peers[0].requests.filter(({ id }) => id === '_mcc').map(({ content }) => content.get('_vol').value),
-			[0],
-		)
+		assert.deepEqual(volumeWrites(peers[0]), [0])
 		assert.deepEqual(
 			events.filter((event) => event.result.includes('cleared')).map((event) => event.stage),
 			['changed output', 'original output returned', 'output round trip complete'],
@@ -443,28 +446,25 @@ test('output pilot keeps tracing when volume arrives before output identity', as
 		assert.equal(controller.feedback.mute, 'Unavailable')
 		await until(() => controller.feedback.volume === 0)
 		await assert.rejects(controller.perform({ kind: 'mute' }), /No saved volume/)
-		assert.deepEqual(
-			peers[0].requests.filter(({ id }) => id === '_mcc').map(({ content }) => content.get('_vol').value),
-			[0],
-		)
+		assert.deepEqual(volumeWrites(peers[0]), [0])
 	} finally {
 		await controller.stop()
 	}
 })
 
-for (const [scenario, expected] of [
-	['no switch', /No complete output round trip/],
-	['capability loss only', /No complete output round trip/],
-	['no return', /No complete output round trip/],
-	['volume report without switch', /No complete output round trip/],
-	['connection loss', /Connection changed/],
-	['cancel', /abort/i],
-	['stale saved level', /Saved mute level survived/],
-	['reappearing saved level', /Saved mute level reappeared/],
-	['nonzero retained saved level', /Saved mute level survived a nonzero/],
-	['report failure', /Synthetic report failure/],
-	['switch after return', /changed again after returning/],
-]) {
+for (const [scenario, expected] of Object.entries({
+	'no switch': /No complete output round trip/,
+	'capability loss only': /No complete output round trip/,
+	'no return': /No complete output round trip/,
+	'volume report without switch': /No complete output round trip/,
+	'connection loss': /Connection changed/,
+	cancel: /abort/i,
+	'stale saved level': /Saved mute level survived/,
+	'reappearing saved level': /Saved mute level reappeared/,
+	'nonzero retained saved level': /Saved mute level survived a nonzero/,
+	'report failure': /Synthetic report failure/,
+	'switch after return': /changed again after returning/,
+})) {
 	test(`output pilot stops on ${scenario} without another volume write`, async () => {
 		const { controller, peers, metadataPeers } = fixture()
 		const cancel = new AbortController()
@@ -524,10 +524,7 @@ for (const [scenario, expected] of [
 			)
 			assert.equal(observers, 0, 'Pilot observation must be detached on every exit')
 			assert.ok(pauses <= 360)
-			assert.deepEqual(
-				peers[0].requests.filter(({ id }) => id === '_mcc').map(({ content }) => content.get('_vol').value),
-				[0],
-			)
+			assert.deepEqual(volumeWrites(peers[0]), [0])
 		} finally {
 			await controller.stop()
 		}
@@ -544,10 +541,12 @@ test('system audio routing sends one SharedSystemAudio request on the metadata s
 		assert.equal(before.routable, true)
 		assert.equal(await controller.routeAudio(before.epoch, ['synthetic-airpods']), true)
 		const [request] = metadataPeers[0].requests.filter((message) => message.type === 48)
-		assert.equal(request['.modifyOutputContextRequestMessage'].type, 2)
-		assert.deepEqual(request['.modifyOutputContextRequestMessage'].settingDevices, ['synthetic-airpods'])
-		assert.deepEqual(request['.modifyOutputContextRequestMessage'].clusterAwareSettingDevices, ['synthetic-airpods'])
-		assert.equal(request['.modifyOutputContextRequestMessage'].addingDevices?.length ?? 0, 0)
+		const { type, settingDevices, clusterAwareSettingDevices, addingDevices } =
+			request['.modifyOutputContextRequestMessage']
+		assert.equal(type, 2)
+		assert.deepEqual(settingDevices, ['synthetic-airpods'])
+		assert.deepEqual(clusterAwareSettingDevices, ['synthetic-airpods'])
+		assert.equal(addingDevices?.length ?? 0, 0)
 		await until(() => controller.audioOutputs?.outputs.length === 2)
 		metadataPeers[0].routeMode = 'ignore'
 		assert.equal(await controller.routeAudio(before.epoch, ['tv-output']), true)
