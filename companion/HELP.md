@@ -14,8 +14,9 @@ on the same local network.
 
 Pairing never starts automatically. The module waits up to three minutes, but
 the TV can close the session earlier; Companion reports when that happens.
-If pairing fails or expires, explicitly start a
-new attempt. Disabling the connection in Companion cancels a pending attempt.
+If a new PIN attempt fails or expires, Companion reconnects using the saved
+pairing for that TV, if available. To request another PIN, check **Start pairing
+when saving** and Save. Disabling the connection cancels a pending attempt.
 
 Remote command offers navigation, playback, volume, seeks, swipes, App Switcher,
 Control Center, Screensaver and power. Launch App lists the TV's applications.

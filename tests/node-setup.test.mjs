@@ -74,22 +74,48 @@ test('pairing saves only after fresh verification, clears the PIN and keeps keys
 	assert.equal(candidate.stops, 1)
 })
 
-test('verification failure retains previous credentials and closes the candidate without automatic PIN retry', async () => {
+test('verification failure closes the candidate before reconnecting with the saved pairing', async () => {
+	const release = Promise.withResolvers()
 	const candidate = new SetupController()
 	candidate.waitUntilReady = async () => {
 		throw new Error('provider-private-payload')
 	}
-	const f = fixture({ controller: () => candidate })
+	const stop = candidate.stop.bind(candidate)
+	candidate.stop = async () => {
+		await release.promise
+		await stop()
+	}
+	const f = fixture()
+	const createController = f.options.controller
+	const replacement = { ...credentials, clientId: 'replacement-client' }
+	f.options.controller = (id, keys) => {
+		if (keys.clientId === replacement.clientId) return candidate
+		assert.deepEqual(keys, credentials)
+		return createController(id)
+	}
 	try {
+		await f.backend.configure(config, saved())
 		await f.backend.configure({ ...config, pair: true }, saved())
-		await f.backend.configure(config, { ...saved(), pin: '1234' })
-		assert.equal(f.states.at(-1).state, 'error')
-		assert.match(f.states.at(-1).message, /new connection could not be verified/)
+		assert.equal(f.controllers[0].stops, 1)
+		f.pairs[0].finish = async () => replacement
+		const finishing = f.backend.configure(config, { ...saved(), pin: '1234' })
+		await nextTurn()
+		assert.equal(candidate.starts, 1)
+		assert.equal(f.controllers.length, 1, 'saved pairing waits for candidate cleanup')
+		release.resolve(undefined)
+		await finishing
+		assert.equal(f.values.connection, 'ready')
+		assert.match(f.values.last_result, /new connection could not be verified.*saved pairing/i)
+		assert.deepEqual(f.controllerIds, [config.deviceId, config.deviceId])
 		assert.deepEqual(f.saves.at(-1).secrets, saved())
 		assert.equal(candidate.stops, 1)
 		assert.equal(f.pairs.length, 1)
 		assert.equal(JSON.stringify([f.states, f.values]).includes('provider-private-payload'), false)
+		const action = { kind: 'button', button: 'select' }
+		await f.backend.perform(action)
+		assert.deepEqual(f.controllers[1].actions, [action])
 	} finally {
+		release.resolve(undefined)
 		await f.backend.stop()
 	}
 })
@@ -100,11 +126,12 @@ test('a closed PIN session stops prompting immediately and a late PIN cannot fin
 		await f.backend.configure({ ...config, pair: true }, saved())
 		f.pairs[0].destroy()
 		await nextTurn()
-		assert.equal(f.states.at(-1).state, 'error')
-		assert.match(f.states.at(-1).message, /closed the pairing session/)
+		assert.equal(f.values.connection, 'ready')
+		assert.match(f.values.last_result, /closed the pairing session.*saved pairing/i)
 		await f.backend.configure(config, { ...saved(), pin: '1234' })
 		assert.deepEqual(f.pairs[0].finishes, [])
 		assert.equal(f.pairs.length, 1)
+		assert.equal(f.controllers.length, 1)
 		assert.deepEqual(f.saves.at(-1).secrets, saved())
 	} finally {
 		await f.backend.stop()
@@ -124,12 +151,51 @@ test('failed pairing reports its stage without exposing the PIN or provider payl
 				throw new Error('provider-private-payload 9876')
 			}
 			await f.backend.configure(config, { ...saved(), pin: '9876' })
-			assert.equal(f.states.at(-1).state, 'error')
-			assert.match(f.states.at(-1).message, message)
+			assert.equal(f.values.connection, 'ready')
+			assert.match(f.values.last_result, message)
 			assert.equal(JSON.stringify([f.states, f.values]).includes('provider-private-payload'), false)
 			assert.equal(JSON.stringify([f.states, f.values]).includes('9876'), false)
 			assert.deepEqual(f.saves.at(-1).secrets, saved())
-			assert.equal(f.controllers.length, 0)
+			assert.deepEqual(f.controllerIds, [config.deviceId])
+		} finally {
+			await f.backend.stop()
+		}
+	}
+})
+
+test('PIN expiry restores the saved pairing and leaves discovery available', async () => {
+	const f = fixture({ pinTimeoutMs: 15 })
+	try {
+		await f.backend.configure({ ...config, pair: true }, saved())
+		await delay(25)
+		assert.equal(f.values.connection, 'ready')
+		assert.match(f.values.last_result, /pairing expired.*saved pairing/i)
+		assert.deepEqual(f.controllerIds, [config.deviceId])
+		assert.equal(f.pairs[0].destroys, 1)
+		assert.deepEqual(f.pairs[0].finishes, [])
+		assert.deepEqual(f.saves.at(-1).secrets, saved())
+		await f.backend.configure({ ...config, refresh: true }, saved())
+		assert.equal(f.scans.length, 2)
+		assert.equal(f.scans[1].signal.aborted, false)
+		assert.equal(f.controllers.length, 1)
+		assert.equal(f.pairs.length, 1)
+	} finally {
+		await f.backend.stop()
+	}
+})
+
+test('a failed pairing restores only credentials for the selected TV', async () => {
+	for (const [previous, state] of [
+		[saved(), 'ready'],
+		[saved('other-tv'), 'error'],
+	]) {
+		const f = fixture({ discover: async () => [device(), device()] })
+		try {
+			await f.backend.configure({ ...config, pair: true }, previous)
+			assert.equal(f.values.connection, state)
+			assert.deepEqual(f.controllerIds, state === 'ready' ? [config.deviceId] : [])
+			assert.deepEqual(f.saves.at(-1).secrets, previous)
+			assert.equal(f.pairs.length, 0)
 		} finally {
 			await f.backend.stop()
 		}
@@ -179,15 +245,48 @@ test('stopping during verification waits for candidate cleanup and rejects a lat
 	const candidate = new SetupController()
 	candidate.waitUntilReady = async () => gate.promise
 	const f = fixture({ controller: () => candidate })
-	await f.backend.configure({ ...config, pair: true })
-	const finishing = f.backend.configure(config, { pin: '1234' })
+	await f.backend.configure({ ...config, pair: true }, saved())
+	const finishing = f.backend.configure(config, { ...saved(), pin: '1234' })
 	await nextTurn()
 	await f.backend.stop()
 	assert.equal(candidate.stops, 1)
 	gate.resolve(undefined)
 	await finishing
-	assert.ok(f.saves.every((call) => !call.secrets.pairing))
+	for (const call of f.saves) assert.deepEqual(call.secrets, saved())
+	assert.equal(candidate.starts, 1)
 	assert.equal(candidate.listeners.size, 0)
+})
+
+test('stopping during failed verification cleanup does not reopen the saved connection', async () => {
+	const release = Promise.withResolvers()
+	let cleanupStarted = false
+	const candidate = new SetupController()
+	candidate.waitUntilReady = async () => {
+		throw new Error('Replacement did not connect')
+	}
+	const stop = candidate.stop.bind(candidate)
+	candidate.stop = async () => {
+		cleanupStarted = true
+		await release.promise
+		await stop()
+	}
+	const f = fixture({ controller: () => candidate })
+	try {
+		await f.backend.configure({ ...config, pair: true }, saved())
+		const finishing = f.backend.configure(config, { ...saved(), pin: '1234' })
+		await nextTurn()
+		assert.equal(cleanupStarted, true)
+		const stopping = f.backend.stop()
+		release.resolve(undefined)
+		await Promise.all([finishing, stopping])
+		assert.equal(candidate.starts, 1)
+		assert.equal(candidate.stops, 1)
+		assert.equal(candidate.listeners.size, 0)
+		assert.deepEqual(f.saves.at(-1).secrets, saved())
+	} finally {
+		release.resolve(undefined)
+		await f.backend.stop()
+	}
 })
 
 test('restarting uses saved pairing without a PIN prompt; refreshing discovery retains the connection', async () => {

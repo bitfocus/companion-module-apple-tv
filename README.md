@@ -25,8 +25,10 @@ after an explicit pairing request; reconnects never start pairing automatically.
 
 The PIN clears after submission. The module waits up to three minutes, but the
 TV can close its session earlier. Companion reports that closure immediately.
-If pairing fails or expires, explicitly start a
-new attempt. Previous saved keys are retained until a replacement verifies.
+If a new PIN attempt fails or expires, Companion reconnects using the saved
+pairing for that TV, if available. Companion keeps the saved keys until a
+replacement verifies. To request another PIN, check **Start pairing when
+saving** and Save.
 Disabling the connection in Companion cancels a pending attempt. Failed pairing can leave a
 controller registration on the TV; remove only the abandoned registration from
 tvOS when retiring it.

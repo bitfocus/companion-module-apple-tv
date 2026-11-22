@@ -209,28 +209,25 @@ export class NodeBackend {
 				const pair =
 					this.options.pairing?.(matches[0]) ??
 					new CompanionPairSetup(matches[0].address, matches[0].companionPort!, { name: PAIRING_NAME })
-				const pending: PendingPair = { deviceId: this.config.deviceId, pair, abort: this.abort, finishing: false }
+				const pending: PendingPair = {
+					deviceId: this.config.deviceId,
+					pair,
+					abort: new AbortController(),
+					finishing: false,
+				}
 				this.pending = pending
-				// Cancellation reaches the attempt through clearPairing(), which destroys it.
-				await bounded(async () => pair.start(), 15000, signal)
+				await bounded(async () => pair.start(), 15000, pending.abort.signal)
 				if (generation !== this.generation) return
 				void pair.closed.then(() => {
-					if (this.pending !== pending || pending.finishing || generation !== this.generation) return
-					this.clearPairing()
-					this.status('error', 'Apple TV closed the pairing session. Start pairing again to request a new PIN')
+					if (this.pending !== pending || pending.finishing) return
+					this.pairingFailed(generation, 'Apple TV closed the pairing session.')
 				})
 				pending.timer = setTimeout(() => {
-					if (this.pending !== pending) return
-					pending.abort.abort()
-					pending.pair.destroy()
-					this.pending = undefined
-					this.status('error', 'Pairing expired. Check Start pairing and Save to try again')
+					if (this.pending === pending) this.pairingFailed(generation, 'Pairing expired.')
 				}, this.options.pinTimeoutMs ?? 180000)
 				this.status('pin', 'Enter the PIN shown on Apple TV and Save')
 			} catch {
-				if (generation !== this.generation) return
-				this.clearPairing()
-				this.status('error', 'Could not start pairing. Check the TV and network, then choose Start pairing again')
+				this.pairingFailed(generation, 'Could not start pairing. Check the TV and network.')
 			}
 			return
 		}
@@ -242,23 +239,26 @@ export class NodeBackend {
 			}
 			if (generation !== this.generation) return
 		}
-		try {
-			const saved = decodePairing(this.secrets.pairing)
-			if (saved.deviceId !== this.config.deviceId) {
-				// A pairing for another TV needs the same prompt as missing credentials.
-				// noinspection ExceptionCaughtLocallyJS
-				throw new Error('Different TV')
-			}
-			await this.connect(saved.deviceId, saved.credentials, generation)
-		} catch {
-			if (generation === this.generation) this.status('unpaired', 'Pair this Apple TV before connecting')
-		}
+		if (!this.connectSavedPairing()) this.status('unpaired', 'Pair this Apple TV before connecting')
 	}
 	private clearPairing(): void {
-		if (!this.pending) return
-		clearTimeout(this.pending.timer)
-		this.pending.pair.destroy()
+		const pending = this.pending
+		if (!pending) return
 		this.pending = undefined
+		clearTimeout(pending.timer)
+		pending.abort.abort()
+		pending.pair.destroy()
+	}
+	private pairingFailed(generation: number, message: string): void {
+		if (generation !== this.generation) return
+		this.clearPairing()
+		if (this.connectSavedPairing()) {
+			const recovery = `${message} Reconnecting with the saved pairing.`
+			this.hooks.values({ last_result: recovery })
+			this.hooks.log?.('warn', recovery)
+		} else {
+			this.status('error', `${message} Start pairing again to request a new PIN.`)
+		}
 	}
 	private async finishPairing(pin: string): Promise<void> {
 		const pending = this.pending!
@@ -273,6 +273,7 @@ export class NodeBackend {
 		this.status('verifying', 'Verifying the new pairing')
 		let candidate: Controller | undefined
 		let verifyingConnection = false
+		let failure: string | undefined
 		try {
 			const credentials = await bounded(async () => pending.pair.finish(pin), 15000, pending.abort.signal)
 			pending.abort.signal.throwIfAborted()
@@ -289,21 +290,19 @@ export class NodeBackend {
 			this.attach(candidate, pairing)
 			candidate = undefined
 		} catch {
-			if (generation === this.generation) {
-				this.secrets = previousSecrets
-				this.clearPairing()
-				const failure = verifyingConnection
-					? 'The PIN exchange completed, but the new connection could not be verified.'
-					: pending.pair.stage === 'identity'
-						? 'Apple TV identity verification failed.'
-						: pending.pair.stage === 'proof'
-							? 'The PIN could not be verified with Apple TV.'
-							: 'The pairing session closed before the PIN could be verified.'
-				this.status('error', `${failure} Previous credentials were kept. Start pairing again to retry`)
-			}
+			if (generation !== this.generation) return
+			this.secrets = previousSecrets
+			failure = verifyingConnection
+				? 'The PIN exchange completed, but the new connection could not be verified.'
+				: pending.pair.stage === 'identity'
+					? 'Apple TV identity verification failed.'
+					: pending.pair.stage === 'proof'
+						? 'The PIN could not be verified with Apple TV.'
+						: 'The pairing session closed before the PIN could be verified.'
 		} finally {
 			await candidate?.stop()
 		}
+		if (failure) this.pairingFailed(generation, failure)
 	}
 	private makeController(deviceId: string, credentials: HAPCredentials): Controller {
 		return (
@@ -311,11 +310,18 @@ export class NodeBackend {
 			new NodeController(deviceId, credentials, { log: (level, message) => this.hooks.log?.(level, message) })
 		)
 	}
-	private async connect(deviceId: string, credentials: HAPCredentials, generation: number): Promise<void> {
-		if (generation !== this.generation) return
-		const controller = this.makeController(deviceId, credentials)
-		this.attach(controller, this.secrets.pairing!)
-		controller.start()
+	private connectSavedPairing(): boolean {
+		const pairing = this.secrets.pairing
+		if (!pairing || pairing.deviceId !== this.config.deviceId) return false
+		try {
+			const { deviceId, credentials } = decodePairing(pairing)
+			const controller = this.makeController(deviceId, credentials)
+			this.attach(controller, pairing)
+			controller.start()
+			return true
+		} catch {
+			return false
+		}
 	}
 	private attach(controller: Controller, pairing: SavedPairing): void {
 		this.controller = controller
