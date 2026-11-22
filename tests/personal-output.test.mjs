@@ -9,7 +9,9 @@ const tv = { id: 'tv-output', name: 'Living Room' }
 const airpods = { id: 'synthetic-airpods', name: "Someone's AirPods Pro" }
 
 function fixture({ confirmationMs = 20000, failedHoldMs = 10000 } = {}) {
-	const f = { learned: [], results: [], sends: [], changes: 0, reply: async () => true }
+	/** @type {string[]} */
+	const results = []
+	const f = { learned: [], results, sends: [], changes: 0, reply: async () => true }
 	f.router = new PersonalOutputRouter(
 		{
 			changed: () => f.changes++,

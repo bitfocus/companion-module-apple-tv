@@ -188,6 +188,8 @@ test('cancellation closes a pending authentication without waiting for its timeo
 	const controller = new AbortController()
 	const connection = new FakeConnection()
 	connection.connect = () => new Promise(() => {})
+	// WebStorm compares two definitions of AbortSignal here.
+	// noinspection JSCheckFunctionSignatures
 	const pending = run(connection, () => assert.fail('must not run'), controller.signal)
 	controller.abort()
 	await assert.rejects(pending, /cancelled/)
