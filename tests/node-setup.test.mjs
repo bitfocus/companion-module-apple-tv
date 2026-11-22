@@ -44,6 +44,38 @@ test('discovery lists only usable TVs without starting pairing or opening a cont
 	}
 })
 
+test('discovery distinguishes an empty scan from a scan failure', async () => {
+	for (const scenario of [
+		{ scan: async () => [], status: /no Apple TV found/i, log: /no devices responded/i },
+		{
+			scan: async () => [{ ...device(), companionPort: undefined }],
+			status: /no Apple TV found/i,
+			log: /required Apple TV services/i,
+		},
+		{
+			scan: async () => {
+				throw new Error('provider-private-payload')
+			},
+			status: /could not search for Apple TVs/i,
+			log: /scan failed/i,
+		},
+	]) {
+		const messages = []
+		const f = fixture({ discover: scenario.scan })
+		f.hooks.log = (_level, message) => messages.push(message)
+		try {
+			await f.backend.configure({ deviceId: '' })
+			assert.equal(f.states.at(-1).state, 'unpaired')
+			assert.match(f.states.at(-1).message, scenario.status)
+			assert.ok(messages.some((message) => scenario.log.test(message)))
+			assert.ok(messages.every((message) => !message.includes('provider-private-payload')))
+			assert.equal(f.pairs.length, 0)
+		} finally {
+			await f.backend.stop()
+		}
+	}
+})
+
 test('pairing saves only after fresh verification, clears the PIN and keeps keys out of config/display', async () => {
 	const verification = Promise.withResolvers()
 	const candidate = new SetupController()
@@ -302,6 +334,11 @@ test('restarting uses saved pairing without a PIN prompt; refreshing discovery r
 		assert.equal(f.controllers.length, 1)
 		assert.equal(f.controllers[0].stops, 0)
 		assert.equal(f.saves.at(-1).config.refresh, false)
+		f.options.discover = async () => []
+		await f.backend.configure({ ...config, refresh: true }, saved())
+		assert.equal(f.values.connection, 'ready')
+		assert.match(f.values.last_result, /no Apple TV found/i)
+		assert.equal(f.controllers[0].stops, 0)
 		f.controllers[0].state = 'reconnecting'
 		f.controllers[0].changed()
 		assert.equal(f.values.volume, '')

@@ -9,6 +9,7 @@ import { fixture, until } from './fixtures/controller-peer.mjs'
 import { runAcceptance } from '../dist-tools/tools/acceptance.js'
 import { remoteActions } from '../dist/actions.js'
 import { SeekCancelled } from '../dist/device/controller.js'
+import { COMPANION_NAME } from '../dist/device/session.js'
 
 function holdSelectPress(peer, released) {
 	peer.onRequest = async (id, content) => {
@@ -27,6 +28,7 @@ test('controller accepts input only after a real health round trip and keeps ges
 	try {
 		await controller.waitUntilReady(2000)
 		assert.equal(controller.feedback.power, 'On')
+		assert.equal(peers[0].requests.find(({ id }) => id === '_systemInfo').content.get('name'), COMPANION_NAME)
 		await Promise.all([
 			controller.perform({ kind: 'button', button: 'appSwitcher' }),
 			controller.perform({ kind: 'button', button: 'left' }),

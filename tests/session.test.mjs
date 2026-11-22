@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import AppleTV from '../dist/main.js'
 import { remoteActions } from '../dist/actions.js'
+import { DEFAULT_PERSONAL_OUTPUT_NAME } from '../dist/config.js'
 import { config, saved, nextTurn, setupFixture } from './fixtures/node-setup-peer.mjs'
 
 test('completed discovery notifies an open Companion editor with the new choices', async () => {
@@ -158,6 +159,58 @@ test('personal output action, variables and feedback stay Unavailable without ro
 		assert.ok(f.module.getConfigFields().some((field) => field.id === 'personalOutputId'))
 	} finally {
 		await f.module.destroy()
+	}
+})
+
+test('playback and mute feedback update with the TV and clear when it disconnects', async () => {
+	const f = fixture()
+	try {
+		await f.module.init(config, false, saved())
+		await nextTurn()
+		const { playbackState, muted } = f.source.feedbacks
+		const controller = f.controllers[0]
+		assert.equal(playbackState.callback({ options: { state: 'Playing' } }), true)
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), false)
+		assert.equal(muted.callback(), false)
+
+		f.source.feedbackChecks = []
+		controller.nowPlaying.state = 'Paused'
+		controller.feedback.mute = 'Muted'
+		controller.changed()
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), true)
+		assert.equal(muted.callback(), true)
+		assert.deepEqual(f.source.feedbackChecks.sort(), ['muted', 'playbackState'])
+
+		f.source.feedbackChecks = []
+		controller.state = 'reconnecting'
+		controller.changed()
+		assert.equal(playbackState.callback({ options: { state: 'Paused' } }), false)
+		assert.equal(playbackState.callback({ options: { state: 'Unknown' } }), false)
+		assert.equal(muted.callback(), false)
+		assert.deepEqual(f.source.feedbackChecks.sort(), ['muted', 'playbackState', 'powerOn'])
+	} finally {
+		await f.module.destroy()
+	}
+})
+
+test('only new connections without a personal output name receive the default', async () => {
+	for (const scenario of [
+		{ first: true, name: undefined, expected: DEFAULT_PERSONAL_OUTPUT_NAME },
+		{ first: false, name: undefined, expected: undefined },
+		{ first: false, name: '', expected: '' },
+		{ first: false, name: 'Headphones', expected: 'Headphones' },
+		{ first: true, name: '', expected: '' },
+	]) {
+		const f = fixture()
+		try {
+			await f.module.init({ deviceId: '', personalOutputName: scenario.name }, scenario.first, {})
+			await nextTurn()
+			assert.equal(f.saves.at(-1).config.personalOutputName, scenario.expected)
+			assert.equal(f.pairs.length, 0)
+			assert.equal(f.controllers.length, 0)
+		} finally {
+			await f.module.destroy()
+		}
 	}
 })
 

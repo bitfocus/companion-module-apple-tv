@@ -27,11 +27,11 @@ Text entry is not implemented.
 
 ## Personal audio output (AirPods)
 
-Set **Personal output name contains** (for example `AirPods`) to enable the
-**Personal audio output** action. Select the AirPods once from the TV's Control
-Center so the module sees them in the TV's output list; it then remembers their
-identifier in the connection secrets. Leave the name empty to disable the feature.
-**Personal output identifier** overrides the name match when needed.
+New connections start with **Personal output name contains** set to `AirPods`.
+Select the AirPods once from the TV's Control Center so the module sees them in
+the TV's output list. It then remembers their identifier in the connection
+secrets. Clear the name to turn off name matching. **Personal output identifier**
+overrides the name match when needed.
 
 The action's Route option is **Toggle personal output**, **Route to personal
 output** or **Route to default output**. Toggle decides the direction from the
@@ -69,8 +69,18 @@ saved keys without a new PIN prompt.
 ## Feedbacks
 
 - **Apple TV is on**: true while the TV reports that it is awake.
+- **Playback state is**: true while the connected TV reports the selected state.
+- **Muted by Companion**: true while the module has a saved volume to restore
+  on the current audio output.
 - **Personal audio output active**: true while the TV reports the configured
   personal output in its audio route.
+
+## Apple TV models
+
+- **Tested** Apple TV 4K (3rd generation, 2022).
+- **Expected to work** Apple TV HD and other Apple TV 4K models running tvOS.
+  These models still need hands-on verification.
+- **Unsupported** Apple TV (1st, 2nd, and 3rd generation). These models predate tvOS.
 
 ## Variables
 
@@ -91,6 +101,6 @@ name in Companion.
 | `mute_state`            | `Muted`, `Unmuted` or `Unavailable`                                         |
 | `metadata_state`        | `Connecting`, `Connected` or `Offline`                                      |
 | `connection`            | Setup state, such as `ready`, `connecting`, `reconnecting` or `error`       |
-| `last_result`           | Result of the last command sent; not proof the TV acted on it               |
+| `last_result`           | Last setup or command result                                                |
 | `personal_output_route` | See Personal audio output above                                             |
 | `personal_output_name`  | Remembered personal output name                                             |

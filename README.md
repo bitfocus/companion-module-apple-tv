@@ -68,7 +68,8 @@ after connecting.
 
 Variables include connection, title, artist, app, playback state, elapsed and
 remaining time, progress, volume, mute-save state, power, personal output route
-and name, and `last_result`.
+and name, and `last_result`. Use **Playback state is** and **Muted by Companion**
+feedback to style buttons based on the current state.
 Elapsed time advances from the selected player's reported position, timestamp
 and playback rate; it freezes on pause and clears on connection loss. Streams
 without a duration have no invented remaining time. Metadata availability depends
@@ -78,12 +79,12 @@ delivery, never physical confirmation.
 ## Personal audio output
 
 The **Personal audio output** action selects a personal output, such as
-same-account AirPods, as the TV's system audio route. Enable it by setting
-**Personal output name contains** (for example `AirPods`); an empty value
-disables it. The TV must report the AirPods once, for example after selecting
-them from its Control Center. The module then remembers their output UID in the
-connection secrets, not the public configuration. If several reported outputs
-match, nothing is learned. **Personal output identifier** overrides the match.
+same-account AirPods, as the TV's system audio route. New connections start
+with **Personal output name contains** set to `AirPods`. Clear the name to turn
+off name matching. The TV must report the AirPods once, for example after
+selecting them from its Control Center. The module then remembers their output
+UID in the connection secrets. With several matches, the route is unavailable.
+**Personal output identifier** overrides the name match.
 
 | Item                                               | ID                      | Values                                                       |
 | -------------------------------------------------- | ----------------------- | ------------------------------------------------------------ |

@@ -37,6 +37,8 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 	backend?: NodeBackend
 	apps: { id: string; name: string }[] = []
 	power = 'Unknown'
+	playbackState?: string
+	muted = false
 	private configurationTasks = new Set<Promise<void>>()
 	private configurationVersion = 0
 	private destroyed = false
@@ -47,7 +49,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		super(internal)
 	}
 
-	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets = {}): Promise<void> {
+	async init(config: ModuleConfig, isFirstInit: boolean, secrets: ModuleSecrets = {}): Promise<void> {
 		UpdateVariableDefinitions(this)
 		this.setVariableValues({
 			...displayDefaults,
@@ -81,6 +83,20 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 						this.power = values.power
 						this.checkFeedbacks('powerOn')
 					}
+					if (values.playback_state !== undefined) {
+						const state = values.metadata_state === 'Connected' ? values.playback_state : undefined
+						if (state !== this.playbackState) {
+							this.playbackState = state
+							this.checkFeedbacks('playbackState')
+						}
+					}
+					if (values.mute_state !== undefined) {
+						const muted = values.mute_state === 'Muted'
+						if (muted !== this.muted) {
+							this.muted = muted
+							this.checkFeedbacks('muted')
+						}
+					}
 				},
 				log: (level, message) => this.log(level, message),
 				feedback: () => this.checkFeedbacks('personalOutputActive'),
@@ -92,12 +108,15 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 			this.backendOptions,
 		)
 		UpdateFeedbacks(this)
-		await this.configUpdated(config, secrets)
+		this.applyConfig(config, secrets, isFirstInit)
 	}
 	getConfigFields(): SomeCompanionConfigField[] {
 		return GetConfigFields(this.backend?.devices, this.config.deviceId)
 	}
 	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets = {}): Promise<void> {
+		this.applyConfig(config, secrets)
+	}
+	private applyConfig(config: ModuleConfig, secrets: ModuleSecrets, isFirstInit = false): void {
 		this.config = config
 		const backend = this.backend
 		if (!backend) return
@@ -106,7 +125,7 @@ export default class AppleTV extends InstanceBase<ModuleSchema> {
 		const version = ++this.configurationVersion
 		// Companion's configuration IPC has a shorter deadline than discovery or PIN
 		// verification. Acknowledge Save now and publish progress through callbacks.
-		const task = backend.configure(config, secrets).catch((error: unknown) => {
+		const task = backend.configure(config, secrets, isFirstInit).catch((error: unknown) => {
 			if (this.backend !== backend || this.configurationVersion !== version) return
 			this.log('error', `Setup failed: ${error instanceof Error ? error.message : String(error)}`)
 			this.updateStatus(InstanceStatus.ConnectionFailure, 'Setup failed; disable the connection and try again')

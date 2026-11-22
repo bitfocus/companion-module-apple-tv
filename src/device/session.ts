@@ -2,6 +2,9 @@ import { randomInt } from 'node:crypto'
 import { CompanionConnection, type HAPCredentials } from 'node-appletv-remote'
 import { CompanionCommands, CompanionRequestRejected, companionRequest } from './companion.js'
 
+/** The name Apple TV sees during pairing and session setup. */
+export const COMPANION_NAME = 'Companion'
+
 export type Connection = Pick<CompanionConnection, 'connect' | 'sendRequest' | 'close' | 'on' | 'off'> &
 	Partial<Pick<CompanionConnection, 'sendMessage'>>
 export type Target = { address: string; companionPort: number }
@@ -143,7 +146,7 @@ export async function withCompanionSession<T>(
 			['_sf', 256],
 			['_sv', '170.18'],
 			['model', 'iPhone10,6'],
-			['name', 'Companion Node Test'],
+			['name', COMPANION_NAME],
 		])
 		if (connection.sendMessage) {
 			onStage('touch surface registration')
